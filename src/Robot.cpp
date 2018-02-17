@@ -20,15 +20,25 @@
 #include <SmartDashboard/SmartDashboard.h>
 
 #include <WPILib.h>
-#include "ctre/Phoenix.h"
+#include <ctre/Phoenix.h>
 
-#include "AHRS.h"
+#include <AHRS.h>
 
 class Robot : public frc::IterativeRobot
 {
+
+
+//------------------------------------------------------
+//Solenoid Variables
+//------------------------------------------------------
 	Compressor *grabComp = new Compressor(0);
-	DoubleSolenoid *gSol1 = new DoubleSolenoid(0, 1);
-	DoubleSolenoid *gSol2 = new DoubleSolenoid(2, 3);
+	Solenoid *gSol1 = new Solenoid(0); //arms up and down
+	Solenoid *gSol2 = new Solenoid(1); //open claw
+
+
+//------------------------------------------------------
+//Talon Variables
+//------------------------------------------------------
 	WPI_TalonSRX *lf = new WPI_TalonSRX(0); //left front
 	WPI_TalonSRX *rf = new WPI_TalonSRX(1); //right front
 	WPI_TalonSRX *lr = new WPI_TalonSRX(2); //left rear
@@ -39,22 +49,73 @@ class Robot : public frc::IterativeRobot
 	WPI_TalonSRX *pWheelL = new WPI_TalonSRX(7); //pickup wheels left
 	WPI_TalonSRX *pWheelR = new WPI_TalonSRX(8); //pickup wheels right
 
+
+//------------------------------------------------------
+//Ultrasonic Variables
+//------------------------------------------------------
 	Ultrasonic *ultra = new Ultrasonic(0, 1); //ultra sonic sensor
 	double distance = 0;
 	double driveSpeed = 0;
-	int iJoystickX_ = 0; // Forward motion
-	int iJoystickY_ = 1; // Side motion
-	int iJoystickRotate_ = 2; // Rotating motion
 
 
+//------------------------------------------------------
+//Controller Variables
+//------------------------------------------------------
+
+	//joystick variables
+	int joystickX=0;
+	int joystickY=1;
+	int joystickRot=2;
+
+	//controller 1 buttons
+	int climbTheScale = 1;
+	int retractBird = 2;
+	int extendBird = 3;
+	int deployBirdArm = 4;
+	int skyLiftDown = 5;
+	int cubeDrop = 6;
+	int skyLiftUp = 7;
+	int turboButton = 8;
+
+	//controller 2 buttons
+	int closeArms = 1;
+	int openArms = 4;
+	int pickupArmsUp = 5;
+	int throwCube = 6;
+	int pickupArmsDown = 7;
+	int captureCube = 8;
+
+
+//------------------------------------------------------
+//Auton Variables
+//------------------------------------------------------
+	int targetAngle = 0;
+	double currentAngle = 0;
+	double angleRemain = targetAngle - currentAngle;
+	double angleSlop = 3;
+	int autonPosition = 0;
+	bool autonIsLeftSwitch = false;
+	bool autonIsBlueAlliance = false;
+
+//------------------------------------------------------
+//Vision Variables
+//------------------------------------------------------
 	double centerX = 0.0;
 	double centerY = 0.0;
 	double area = 0.0;
 
+//------------------------------------------------------
+//Drive Variables
+//------------------------------------------------------
+	double teleMaxSpeed = 0.5;
+
+
+
+
 public:
 
-	Joystick *js1;
-	Joystick *js2;
+	Joystick *js1; //primary controller
+	Joystick *js2; //secondary controller
 	MecanumDrive *m_robotDrive;
     AHRS *gyro;
 
@@ -93,14 +154,8 @@ public:
 	 * well.
 	 */
 
-	int targetAngle = 0;
-	double currentAngle = 0;
-	double angleRemain = targetAngle - currentAngle;
-	double angleSlop = 3;
-	bool increaseMaxSpeed = 8;
-	int autonPosition = 0;
-	bool autonIsLeftSwitch = false;
-	bool autonIsBlueAlliance = false;
+
+
 
 	void Wait(double t)
 	{
@@ -167,10 +222,7 @@ public:
 		}
 	}
 
-	void Drop()
-	{
-		//release the cube
-	}
+
 
 	void TurnToAngle(int targetAngle)
 	{
@@ -224,7 +276,8 @@ public:
 	}
 
 	//This extends and retracts the pole. It also sets the motor to 0
-	void ActuateBirdPole(int extend)
+	void ActuateBirdPole(int extend) //this function 1. makes the motor go forward to extend the pole
+									 //2. rewinds the pole by making the motor negative 3. stops the motor
 		{
 			if (extend > 0)
 			{
@@ -244,46 +297,83 @@ public:
 
 	void teleopSkyLift()
 	{
-		bool goingUp = js1->GetRawButton(7);
-		bool goingDown = js1->GetRawButton(5);
+		bool goingUp = js1->GetRawButton(skyLiftUp);
+		bool goingDown = js1->GetRawButton(skyLiftDown);
 
 		if(!goingUp && !goingDown){
-			sLift ->Set(ControlMode::PercentOutput, 0.75);
+			sLift ->Set(-0.2);
 		}
 		else if(goingUp){
-		 sLift ->Set(ControlMode::PercentOutput, 1);
+		 sLift ->Set(-.5);
 		}
 		else if(goingDown){
-			sLift ->Set(ControlMode::PercentOutput, 0);
+			sLift ->Set(0);
 		}
 	}
-	void teleopArmControl(){
+	void teleopArmControl() //Secondary controller controls to move grabber
+	{
+		if(js2->GetRawButton(pickupArmsUp))
+		{
+			gSol1->Set(false);
+		}
+		if(js2->GetRawButton(pickupArmsDown))
+		{
+			gSol1->Set(true);
+		}
+		if(js2->GetRawButton(openArms))
+		{
+			gSol2->Set(true);
+		}
+		if(js2->GetRawButton(closeArms))
+		{
+			gSol2->Set(false);
+		}
+	}
+
+	void Drop()
+	{
+		if(js1->GetRawButton(6))
+		{
+			gSol2->Set(true);
+		}
+	}
+
+	void teleopGrabToggle()
+	{
+		if(js2->GetRawButton(4))
+		{
+			gSol2->Set(true);
+		}
+		else if(js2->GetRawButton(1))
+		{
+			gSol2->Set(false);
+		}
+		else
+		{
+			gSol2->Set(false);
+		}
+
 		if(js2->GetRawButton(5)){
-			gSol1->Set(DoubleSolenoid::Value::kReverse);
+			gSol1->Set(true);
 		}
 		if(js2->GetRawButton(7)){
-			gSol1->Set(DoubleSolenoid::Value::kForward);
-		}
-		if(js2->GetRawButton(4)){
-			gSol2->Set(DoubleSolenoid::Value::kReverse);
-		}
-		if(js2->GetRawButton(1)){
-			gSol2->Set(DoubleSolenoid::Value::kForward);
+			gSol1->Set(false);
 		}
 	}
-	void pickUpWheels(){
-		if(js2->GetRawButton(8)){
-			pWheelL->Set(ControlMode::PercentOutput, .5);
-			pWheelR->Set(ControlMode::PercentOutput, -.5);
-		}
-		else if (js2->GetRawButton(6)){
-			pWheelL->Set(ControlMode::PercentOutput, .5);
-			pWheelR->Set(ControlMode::PercentOutput, -.5);
 
+	void pickUpWheels() //Secondary controller controls to turn on wheels
+	{
+		if(js2->GetRawButton(captureCube)){
+			pWheelL->Set(.75);
+			pWheelR->Set(-.75);
+		}
+		else if (js2->GetRawButton(throwCube)){
+			pWheelL->Set(-.6);
+			pWheelR->Set(.6);
 		}
 		else{
-			pWheelL->Set(ControlMode::PercentOutput, 0);
-			pWheelR->Set(ControlMode::PercentOutput, 0);
+			pWheelL->Set(0);
+			pWheelR->Set(0);
 		}
 
 
@@ -347,10 +437,10 @@ public:
 		Drop();
 	}
 
-	void Drive(double xAxis, double yAxis, double rot)
+	void MecDrive(double xAxis, double yAxis, double rot) //homemade mecanum drive!
 	{
 		double noMove = 0.2; //Dead area of the axes
-		double maxSpeed = .5;
+		double maxSpeed = .5; //normal speed (not turbo)
 
 		if (fabs(xAxis) < noMove)
 			xAxis = 0.0;
@@ -361,16 +451,16 @@ public:
 		if (fabs(rot) < noMove)
 			rot = 0.0;
 
-		if (js1->GetRawButton(increaseMaxSpeed))
+		if (js1->GetRawButton(turboButton))
 			maxSpeed = 1;
 
 		else
 			maxSpeed = .5;
 
-		double lfSpeed = -xAxis + yAxis + rot;
-		double lrSpeed = xAxis + yAxis + rot;
-		double rfSpeed = -xAxis + yAxis - rot;
-		double rrSpeed = xAxis + yAxis - rot;
+		double lfSpeed = -yAxis - xAxis - rot;
+		double rfSpeed = +yAxis - xAxis - rot;
+		double rrSpeed = +yAxis + xAxis - rot;
+		double lrSpeed = -yAxis + xAxis - rot;
 
 		if (fabs(lfSpeed) > 1)
 			lfSpeed = fabs(lfSpeed) / lfSpeed;
@@ -389,6 +479,34 @@ public:
 		rf -> Set(ControlMode::PercentOutput, rfSpeed*maxSpeed);
 		rr -> Set(ControlMode::PercentOutput, rrSpeed*maxSpeed);
 	}
+	void TankDrive(double xAxis, double yAxis, double zAxis)
+	{
+		double noMove = 0.2; //Dead area of the axes
+		double maxSpeed = .5;
+
+		double lfSpeed = 0;
+		double rfSpeed = 0;
+		double lrSpeed = 0;
+		double rrSpeed = 0;
+
+
+		lf -> Set(ControlMode::PercentOutput, lfSpeed*maxSpeed);
+		lr -> Set(ControlMode::PercentOutput, -lrSpeed*maxSpeed);
+		rf -> Set(ControlMode::PercentOutput, rfSpeed*maxSpeed);
+		rr -> Set(ControlMode::PercentOutput, -rrSpeed*maxSpeed);
+
+	}
+
+    double Dz(double axisVal) //deadzone value
+    {
+    	if(axisVal < -0.20)
+    		return axisVal;
+    	if(axisVal > 0.20)
+    		return axisVal;
+    	return 0;
+    }
+
+
 
 	char givenPos = ' '; //Where we start against the alliance wall
 	char switchRL = ' '; //Where our side if the switch is
@@ -404,6 +522,42 @@ public:
 
 		if (autonIsBlueAlliance == true)
 		{
+//			if (/*left switch is blue*/)
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
+//			if ()/*left switch is blue*/
+//			{
+//				autonIsLeftSwitch = true;
+//			}
 //			if ()/*left switch is blue*/
 //			{
 //				autonIsLeftSwitch = true;
@@ -475,14 +629,7 @@ public:
 
 	}
 
-    double Db(double axisVal)
-    {
-    	if(axisVal < -0.10)
-    		return axisVal;
-    	if(axisVal > 0.10)
-    		return axisVal;
-    	return 0;
-    }
+
 
 	void TeleopInit()
 	{
@@ -491,24 +638,28 @@ public:
 
 	void TeleopPeriodic()
 	{
-		float angle = gyro->GetAngle();
-		if (js1->GetRawButton(8)) {
-			m_robotDrive->DriveCartesian(Db(js1->GetY()), Db(-js1->GetX()), Db(-js1->GetZ()), angle);
-		}
-		else{
-			m_robotDrive->DriveCartesian(0.5*Db(js1->GetY()), 0.5*Db(-js1->GetX()), 0.5*Db(-js1->GetZ()), angle);
-		}
-		if(js1->GetRawButton(5))
-				gyro->Reset();
+
+
+		//teleDrive();
+
+
+		double jsX=js1->GetRawAxis(joystickX);
+		double jsY=js1->GetRawAxis(joystickY);
+		double jsRot=js1->GetRawAxis(joystickRot);
+		MecDrive(jsX,-jsY,jsRot);
+
+
+		//teleopGrabToggle();
 
 		teleopArmControl();
 		pickUpWheels();
+		teleopSkyLift();
 
 		int PoleExtend=0;
-		if (js1->GetRawButton(3)){ //Button B extends the pole
+		if (js1->GetRawButton(extendBird)){ //Button B extends the pole
 			PoleExtend=1;
 		}
-		if (js1->GetRawButton(2)){ //Button A retracts the pole
+		if (js1->GetRawButton(retractBird)){ //Button A retracts the pole
 			PoleExtend=-1;
 		}
 
