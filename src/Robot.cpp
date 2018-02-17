@@ -89,14 +89,27 @@ class Robot : public frc::IterativeRobot
 //------------------------------------------------------
 //Auton Variables
 //------------------------------------------------------
-	int targetAngle = 0;
-	double currentAngle = 0;
-	double angleRemain = targetAngle - currentAngle;
-	double angleSlop = 3;
-	int autonPosition = 0;
-	bool autonIsLeftSwitch = false;
-	bool autonIsBlueAlliance = false;
-
+//	int targetAngle = 0;
+//	double currentAngle = 0;
+//	double angleRemain = targetAngle - currentAngle;
+//	double angleSlop = 3;
+//	int autonPosition = 0;
+//	bool autonIsLeftSwitch = false;
+//	bool autonIsBlueAlliance = false;
+	int robotPos;
+	int timer;
+	int state;
+	std::string gameData;
+	int currentAngle;
+	double autonSpeed = 0.25;
+	int FirstAction = 100;
+	int SecondAction = 200;
+	int ThirdAction = 350;
+	int FourthAction = 550;
+	int FifthAction = 600;
+	int SixthAction = 625;
+	double LeftDifference = 0;
+	double RightDifference = 0;
 //------------------------------------------------------
 //Vision Variables
 //------------------------------------------------------
@@ -123,7 +136,7 @@ public:
 	{
 		//m_chooser.AddDefault(kAutoNameDefault, kAutoNameDefault);
 		//m_chooser.AddObject(kAutoNameCustom, kAutoNameCustom);
-		frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
+		//frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
 
 		gyro = new AHRS(SPI::Port::kMXP);
 
@@ -155,7 +168,7 @@ public:
 	 */
 
 
-
+ 
 
 	void Wait(double t)
 	{
@@ -174,6 +187,24 @@ public:
 
 		return;
 	}
+	void Stop(){
+		lf -> Set(ControlMode :: PercentOutput, 0);
+		rf -> Set(ControlMode :: PercentOutput, 0);
+		lr -> Set(ControlMode :: PercentOutput, 0);
+		rr -> Set(ControlMode :: PercentOutput, 0);
+	}
+	void TurnRight(double speed){
+		lf -> Set(ControlMode :: PercentOutput, -speed);
+		lr -> Set(ControlMode :: PercentOutput, -speed);
+		rf -> Set(ControlMode :: PercentOutput, -speed);
+		rr -> Set(ControlMode :: PercentOutput, -speed);
+	}
+	void TurnLeft(double speed){
+		lf -> Set(ControlMode :: PercentOutput, speed);
+		lr -> Set(ControlMode :: PercentOutput, speed);
+		rf -> Set(ControlMode :: PercentOutput, speed);
+		rr -> Set(ControlMode :: PercentOutput, speed);
+	}
 
 	void DriveForward(double x, double t)
 	{
@@ -189,6 +220,31 @@ public:
 		x = 0;
 		t = 0;
 	}
+	
+	void DriveStraight(double speed){
+		float slop = 5;
+
+		if(currentAngle < 0 - slop){
+			lf -> Set(ControlMode :: PercentOutput, -speed);
+			rf -> Set(ControlMode :: PercentOutput, speed+LeftDifference);
+			lr -> Set(ControlMode :: PercentOutput, -speed);
+			rr -> Set(ControlMode :: PercentOutput, speed+LeftDifference);
+		}
+		else if(currentAngle > 0 + slop){
+			lf -> Set(ControlMode :: PercentOutput, -speed+RightDifference);
+			rf -> Set(ControlMode :: PercentOutput, speed);
+			lr -> Set(ControlMode :: PercentOutput, -speed+RightDifference);
+			rr -> Set(ControlMode :: PercentOutput, speed);
+
+		}
+
+		else{
+			lf -> Set(ControlMode :: PercentOutput, -speed);
+			rf -> Set(ControlMode :: PercentOutput, speed);
+			lr -> Set(ControlMode :: PercentOutput, -speed);
+			rr -> Set(ControlMode :: PercentOutput, speed);
+			}
+		}
 
 	void DriveSideways(double x, double t)
 	{
@@ -221,29 +277,26 @@ public:
 
 		}
 	}
+bool turnComplete = false;
 
 
-
-	void TurnToAngle(int targetAngle)
+	void Turn(int wantAngle)
 	{
-			//Turn setting motor speed to  currentAngle / targetAngle and have a minimum of .1
-		currentAngle = gyro->GetYaw();
-		double x = targetAngle / fabs(currentAngle);
-
-		while (fabs(currentAngle) < fabs(targetAngle) - angleSlop)
-		{
-			if (x > 1)
-				x = 1;
-			lf -> Set(ControlMode::PercentOutput, x);
-			lr -> Set(ControlMode::PercentOutput, x);
-			rf -> Set(ControlMode::PercentOutput, -x);
-			rr -> Set(ControlMode::PercentOutput, -x);
-			currentAngle = gyro->GetYaw();
-			x = targetAngle / currentAngle;
-
-			}
-
-
+//		frc::SmartDashboard::PutNumber("Want Angle", wantAngle);
+//		frc::SmartDashboard::PutNumber("Current Angle", CurrentAngle);
+		int slop = 5;
+		if(wantAngle < currentAngle - slop){
+			TurnLeft(autonSpeed);
+		}
+		else if(wantAngle > currentAngle + slop){
+			TurnRight(autonSpeed);
+		}
+		else{
+			Stop();
+			turnComplete = true;
+			gyro->ZeroYaw();
+			currentAngle = 0;
+		}
 	}
 	void DriveToBlock(){
 	double distance = ultra->GetRangeInches();
@@ -382,59 +435,386 @@ public:
 
 	void LeftOne()
 	{
-		DriveForward(1, 1000);
-		TurnToAngle(-90);
-		Lifter(1);
-		DriveForward(1, 1000);
-		TurnToAngle(-90);
-		Drop();
+		if(timer < FirstAction){
+			state = 1;
+
+		}
+		if(timer == FirstAction){
+			state = 2;
+		}
+		if(timer > FirstAction && state == 2){
+			state = 3;
+		}
+		if(state == 3 && turnComplete){
+			state = 4;
+		}
+		if(state == 4 && timer < SecondAction){
+			state = 5;
+		}
+		if(state == 5 && timer > SecondAction && timer < ThirdAction){
+			state = 6;
+		}
+		if(state == 6 && timer == ThirdAction){
+			state = 7;
+		}
+		if(state == 7 && timer > ThirdAction){
+			state = 8;
+		}
+		if(state == 8 && turnComplete){
+			state = 9;
+		}
+		if(state == 9 && timer >= FourthAction && timer < FifthAction){
+			state = 10;
+		}
+		if(state == 10 && timer == FifthAction){
+			state = 11;
+		}
+		if(state == 11 && timer > FifthAction && timer < SixthAction){
+			state = 12;
+		}
+
+		if (state == 1){
+			DriveStraight(autonSpeed);
+
+		}
+		else if (state == 2){
+			Stop();
+		}
+		else if (state == 3){
+			Turn(-90);
+		}
+		else if (state == 4){
+			Stop();
+
+			timer = FirstAction;
+
+		}
+		else if (state == 5){
+			turnComplete = false;
+			Lifter(0);
+		}
+		else if (state == 6){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 7){
+			Stop();
+		}
+		else if(state == 8){
+			Turn(-90);
+		}
+
+		else if(state == 9){
+			Stop();
+			timer = FourthAction;
+			turnComplete = false;
+		}
+		else if(state == 10){
+			DriveStraight(autonSpeed);
+		}
+		else if (state == 11){
+			Stop();
+		}
+		else if (state == 12){
+			Drop();
+		}
 	}
-
-
 	void LeftTwo()
 	{
-		Wait(5000);
-		DriveSideways(-1, 1000);
-		Lifter(1);
-		DriveForward(1, 1000);
-		Drop();
-	}
+		FirstAction = 50;
+		SecondAction = 100;
+		ThirdAction = 150;
+		FourthAction = 200;
+		SixthAction = 250;
 
+
+		if(timer < FirstAction){
+			state = 1;
+			timer = FirstAction;
+		}
+		if(timer > FirstAction && timer < SecondAction && state == 1){
+			state = 2;
+		}
+		if(timer > SecondAction && timer < ThirdAction && state == 2) {
+			state = 3;
+		}
+		if(timer == ThirdAction){
+			state = 4;
+		}
+		if(timer > ThirdAction && timer < FourthAction && state == 3){
+			state = 5;
+		}
+		if(timer > FourthAction && timer < FifthAction && state == 4){
+			state = 6;
+		}
+		if(timer == FifthAction) {
+			state = 7;
+		}
+		if(timer < SixthAction && state == 7){
+			state = 8;
+		}
+		if(timer == SixthAction){
+			state = 9;
+		}
+
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			Turn(-90);
+		}
+		else if(state == 3){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 4){
+			Stop();
+		}
+		else if(state == 5){
+			Turn(90);
+		}
+		else if(state == 6){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 7){
+			Stop();
+		}
+		else if(state == 8){
+			Turn(90);
+		}
+		else if(state == 9){
+			Drop();
+		}
+
+	}
 	void LeftThree()
 	{
-		DriveForward(1, 1000);
-		Lifter(1);
-		TurnToAngle(90);
-		DriveForward(1, 1000);
-		Drop();
-	}
+		FirstAction = 50;
+		SecondAction = 100;
+		ThirdAction = 150;
+		FourthAction = 200;
 
+		if(timer < FirstAction){
+			state = 1;
+			timer = FirstAction;
+		}
+		if(timer < SecondAction && state == 1 && timer > FirstAction){
+			state = 2;
+		}
+		if(timer == SecondAction && state == 2){
+			state = 3;
+		}
+		if(state == 3){
+			state = 4;
+		}
+		if(state == 4 && turnComplete){
+			state = 5;
+		}
+
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 3){
+			Stop();
+		}
+		else if(state == 4){
+			Turn(90);
+		}
+		else if(state == 5){
+			Drop();
+		}
+
+	}
 	void RightOne()
 	{
-		DriveForward(1, 1000);
-		Lifter(1);
-		TurnToAngle(-90);
-		DriveForward(1, 1000);
-		Drop();
-	}
+		FirstAction = 50;
+		SecondAction = 100;
+		ThirdAction = 150;
+		FourthAction = 200;
 
+		if(timer < FirstAction){
+			state = 1;
+			timer = FirstAction;
+		}
+		if(timer < SecondAction && state == 1 && timer > FirstAction){
+			state = 2;
+		}
+		if(timer == SecondAction && state == 2){
+			state = 3;
+		}
+		if(state == 3){
+			state = 4;
+		}
+		if(state == 4 && turnComplete){
+			state = 5;
+		}
+
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 3){
+			Stop();
+		}
+		else if(state == 4){
+			Turn(-90);
+		}
+		else if(state == 5){
+			Drop();
+		}
+
+	}
 	void RightTwo()
 	{
-		Wait(5);
-		DriveSideways(1, 1000);
-		Lifter(1);
-		DriveForward(1, 1000);
-		Drop();
-	}
+		FirstAction = 50;
+		SecondAction = 100;
+		ThirdAction = 150;
+		FourthAction = 200;
+		SixthAction = 250;
+		if(timer < FirstAction){
+			state = 1;
+			timer = FirstAction;
+		}
+		if(timer > FirstAction && timer < SecondAction && state == 1){
+			state = 2;
+		}
+		if(timer > SecondAction && timer < ThirdAction && state == 2) {
+			state = 3;
+		}
+		if(timer == ThirdAction){
+			state = 4;
+		}
+		if(timer > ThirdAction && timer < FourthAction && state == 3){
+			state = 5;
+		}
+		if(timer > FourthAction && timer < FifthAction && state == 4){
+			state = 6;
+		}
+		if(timer == FifthAction) {
+			state = 7;
+		}
+		if(timer < SixthAction && state == 7){
+			state = 8;
+		}
+		if(timer == SixthAction){
+			state = 9;
+		}
 
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			Turn(90);
+		}
+		else if(state == 3){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 4){
+			Stop();
+		}
+		else if(state == 5){
+			Turn(-90);
+		}
+		else if(state == 6){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 7){
+			Stop();
+		}
+		else if(state == 8){
+			Turn(-90);
+		}
+		else if(state == 9){
+			Drop();
+		}
+	}
 	void RightThree()
 	{
-		DriveForward(1, 1000);
-		TurnToAngle(90);
-		Lifter(1);
-		DriveForward(1, 1000);
-		TurnToAngle(90);
-		Drop();
+		if(timer < FirstAction){
+					state = 1;
+
+		}
+		if(timer == FirstAction){
+			state = 2;
+		}
+		if(timer > FirstAction && state == 2){
+			state = 3;
+		}
+		if(state == 3 && turnComplete){
+			state = 4;
+		}
+		if(state == 4 && timer < SecondAction){
+			state = 5;
+		}
+		if(state == 5 && timer > SecondAction && timer < ThirdAction){
+			state = 6;
+		}
+		if(state == 6 && timer == ThirdAction){
+			state = 7;
+		}
+		if(state == 7 && timer > ThirdAction){
+			state = 8;
+		}
+		if(state == 8 && turnComplete){
+			state = 9;
+		}
+		if(state == 9 && timer >= FourthAction && timer < FifthAction){
+			state = 10;
+		}
+		if(state == 10 && timer == FifthAction){
+			state = 11;
+		}
+		if(state == 11 && timer > FifthAction && timer < SixthAction){
+			state = 12;
+		}
+
+		if (state == 1){
+			DriveStraight(autonSpeed);
+
+		}
+		else if (state == 2){
+			Stop();
+		}
+		else if (state == 3){
+			Turn(90);
+		}
+		else if (state == 4){
+			Stop();
+
+			timer = FirstAction;
+
+		}
+		else if (state == 5){
+			turnComplete = false;
+			Lifter(0);
+		}
+		else if (state == 6){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 7){
+			Stop();
+		}
+		else if(state == 8){
+			Turn(90);
+		}
+
+		else if(state == 9){
+			Stop();
+			timer = FourthAction;
+			turnComplete = false;
+		}
+		else if(state == 10){
+			DriveStraight(autonSpeed);
+		}
+		else if (state == 11){
+			Stop();
+		}
+		else if (state == 12){
+			Drop();
+		}
 	}
 
 	void MecDrive(double xAxis, double yAxis, double rot) //homemade mecanum drive!
@@ -481,7 +861,7 @@ public:
 	}
 	void TankDrive(double xAxis, double yAxis, double zAxis)
 	{
-		double noMove = 0.2; //Dead area of the axes
+		//double noMove = 0.2; //Dead area of the axes
 		double maxSpeed = .5;
 
 		double lfSpeed = 0;
@@ -513,15 +893,27 @@ public:
 
 	void AutonomousInit() override
 	{
+		timer = 0;
+		robotPos = SmartDashboard::GetNumber("robotPos", 1);
+		gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
+		//m_autoSelected = m_chooser.GetSelected();
+		// m_autoSelected = SmartDashboard::GetString(
+		// 		"Auto Selector", kAutoNameDefault);
+//		givenPos = robotPos+switchRL;
+		//std::cout << "Auto selected: " << m_autoSelected << std::endl;
+		gyro->ZeroYaw();
+		turnComplete = false;
+		state = 1;
+		currentAngle = 0;
 		//SmartDashboard::PutNumber("Auton Position", autonPosition);
 		//SmartDashboard::PutBoolean("Auton Is Blue Alliance?", autonIsBlueAlliance);
 		//SmartDashboard::PutBoolean("Auton Is Going to Left Switch?", autonIsLeftSwitch);
 
-		SmartDashboard::GetNumber("Auton Position", autonPosition);
-		SmartDashboard::GetBoolean("Auton Is Blue Alliance", autonIsBlueAlliance);
+		//SmartDashboard::GetNumber("Auton Position", autonPosition);
+		//SmartDashboard::GetBoolean("Auton Is Blue Alliance", autonIsBlueAlliance);
 
-		if (autonIsBlueAlliance == true)
-		{
+		//if (autonIsBlueAlliance == true)
+		//{
 //			if (/*left switch is blue*/)
 //			{
 //				autonIsLeftSwitch = true;
@@ -562,17 +954,17 @@ public:
 //			{
 //				autonIsLeftSwitch = true;
 //			}
-		}
+		//}
 
-		else if(autonIsBlueAlliance == false)
-		{
+		//else if(autonIsBlueAlliance == false)
+		//{
 //			if(/*left switch is red*/)
 //			{
 //				autonIsLeftSwitch = true;
 //			}
-		}
+		//}
 
-		SmartDashboard::GetBoolean("Auton Is Going to Left Switch?", autonIsLeftSwitch);
+		//SmartDashboard::GetBoolean("Auton Is Going to Left Switch?", autonIsLeftSwitch);
 
 		currentAngle = 0;
 		gyro->ZeroYaw();
@@ -596,39 +988,55 @@ public:
 		currentAngle = gyro->GetYaw();
 		frc::SmartDashboard::PutNumber("Current Angle", currentAngle);
 
-		SmartDashboard::GetNumber("Auton Position", autonPosition);
-		SmartDashboard::GetBoolean("Auton Is Blue Alliance", autonIsBlueAlliance);
-		SmartDashboard::GetBoolean("Auton Is Going to Left Switch?", autonIsLeftSwitch);
+		//SmartDashboard::GetNumber("Auton Position", autonPosition);
+		//SmartDashboard::GetBoolean("Auton Is Blue Alliance", autonIsBlueAlliance);
+		//SmartDashboard::GetBoolean("Auton Is Going to Left Switch?", autonIsLeftSwitch);
 
-		if(autonPosition == 1)
-		{
-			if (autonIsLeftSwitch == true)
-				LeftOne();
+		autonSpeed = SmartDashboard::GetNumber("autonSpeed", autonSpeed);
+		FirstAction = SmartDashboard::GetNumber("First Action Space", FirstAction);
+		SecondAction = SmartDashboard::GetNumber("Second Action Space", SecondAction);
+		ThirdAction = SmartDashboard::GetNumber("Third Action Space", ThirdAction);
+		FourthAction = SmartDashboard::GetNumber("Fourth Action Space", FourthAction);
+		FifthAction = SmartDashboard::GetNumber("Fifth Action Space", FifthAction);
+		SixthAction = SmartDashboard::GetNumber("Sixth Action Space", SixthAction);
+		frc::SmartDashboard::PutNumber("distance", distance);
+		timer ++;
+		LeftDifference = currentAngle*.0125;
+		RightDifference = currentAngle*.0125;
+		currentAngle = gyro->GetYaw(); //Getting what angle we are at
+		SmartDashboard::PutNumber(  "CurrentAngle", currentAngle);
+		frc::SmartDashboard::PutNumber("Timer", timer);
+		frc::SmartDashboard::PutBoolean("TurnComplete?", turnComplete);
+		frc::SmartDashboard::PutNumber("State", state);
+		frc::SmartDashboard::PutNumber("Right Diff", RightDifference);
+		if(gameData.length() > 0){
+			if(gameData[0] == 'L'){
+				if(robotPos == 1){
+					LeftOne();
+				}
+				else if(robotPos == 2){
+					LeftTwo();
+				}
+				else if(robotPos == 3){
+					LeftThree();
+				}
 
-			else
-				RightOne();
+			}
+
+			if(gameData[0] == 'R'){
+				if(robotPos == 1){
+					RightOne();
+				}
+				else if(robotPos == 2){
+					RightTwo();
+				}
+				else if(robotPos == 3){
+					LeftThree();
+				}
+
+			}
 		}
-
-		if(autonPosition == 2)
-		{
-			if (autonIsLeftSwitch == true)
-				LeftTwo();
-
-			else
-				RightTwo();
-		}
-
-		if(autonPosition == 3)
-		{
-			if (autonIsLeftSwitch == true)
-				LeftThree();
-
-			else
-				RightThree();
-		}
-
 	}
-
 
 
 	void TeleopInit()
