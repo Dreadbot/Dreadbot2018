@@ -304,10 +304,10 @@ public:
 			sLift ->Set(-0.2);
 		}
 		else if(goingUp){
-		 sLift ->Set(-.5);
+		 sLift ->Set(-.6);
 		}
 		else if(goingDown){
-			sLift ->Set(0);
+			sLift ->Set(.1);
 		}
 	}
 	void teleopArmControl() //Secondary controller controls to move grabber
@@ -332,9 +332,13 @@ public:
 
 	void Drop()
 	{
-		if(js1->GetRawButton(6))
+		if(js1->GetRawButton(cubeDrop))
 		{
 			gSol2->Set(true);
+		}
+		else
+		{
+			gSol2->Set(false);
 		}
 	}
 
@@ -479,22 +483,59 @@ public:
 		rf -> Set(ControlMode::PercentOutput, rfSpeed*maxSpeed);
 		rr -> Set(ControlMode::PercentOutput, rrSpeed*maxSpeed);
 	}
-	void TankDrive(double xAxis, double yAxis, double zAxis)
+//	void TankDrive(double xAxis, double yAxis, double zAxis)
+//	{
+//		double noMove = 0.2; //Dead area of the axes
+//		double maxSpeed = .5;
+//
+//		double lfSpeed = 0;
+//		double rfSpeed = 0;
+//		double lrSpeed = 0;
+//		double rrSpeed = 0;
+//
+//
+//		lf -> Set(ControlMode::PercentOutput, lfSpeed*maxSpeed);
+//		lr -> Set(ControlMode::PercentOutput, -lrSpeed*maxSpeed);
+//		rf -> Set(ControlMode::PercentOutput, rfSpeed*maxSpeed);
+//		rr -> Set(ControlMode::PercentOutput, -rrSpeed*maxSpeed);
+//
+//	}
+
+	void ArcadeDrive(double yAxis, double rot)
 	{
 		double noMove = 0.2; //Dead area of the axes
-		double maxSpeed = .5;
+		double maxSpeed = .5; //normal speed (not turbo)
 
-		double lfSpeed = 0;
-		double rfSpeed = 0;
-		double lrSpeed = 0;
-		double rrSpeed = 0;
+		if (fabs(rot) < noMove)
+			rot = 0.0;
 
+		if (js1->GetRawButton(turboButton))
+			maxSpeed = 1;
+
+		else
+			maxSpeed = .5;
+
+		double lfSpeed = -yAxis - rot;
+		double rfSpeed = +yAxis - rot;
+		double rrSpeed = +yAxis - rot;
+		double lrSpeed = -yAxis - rot;
+
+		if (fabs(lfSpeed) > 1)
+			lfSpeed = fabs(lfSpeed) / lfSpeed;
+
+		if (fabs(lrSpeed) > 1)
+			lrSpeed = fabs(lrSpeed) / lrSpeed;
+
+		if (fabs(rfSpeed) > 1)
+			rfSpeed = fabs(rfSpeed) / rfSpeed;
+
+		if (fabs(rrSpeed) > 1)
+			rrSpeed = fabs(rrSpeed) / rrSpeed;
 
 		lf -> Set(ControlMode::PercentOutput, lfSpeed*maxSpeed);
-		lr -> Set(ControlMode::PercentOutput, -lrSpeed*maxSpeed);
+		lr -> Set(ControlMode::PercentOutput, lrSpeed*maxSpeed);
 		rf -> Set(ControlMode::PercentOutput, rfSpeed*maxSpeed);
-		rr -> Set(ControlMode::PercentOutput, -rrSpeed*maxSpeed);
-
+		rr -> Set(ControlMode::PercentOutput, rrSpeed*maxSpeed);
 	}
 
     double Dz(double axisVal) //deadzone value
@@ -646,12 +687,13 @@ public:
 		double jsX=js1->GetRawAxis(joystickX);
 		double jsY=js1->GetRawAxis(joystickY);
 		double jsRot=js1->GetRawAxis(joystickRot);
-		MecDrive(jsX,-jsY,jsRot);
+		ArcadeDrive(-jsY,jsRot);
 
 
 		//teleopGrabToggle();
 
 		teleopArmControl();
+		//Drop();
 		pickUpWheels();
 		teleopSkyLift();
 
