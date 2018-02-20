@@ -27,14 +27,13 @@
 class Robot : public frc::IterativeRobot
 {
 
-
 //------------------------------------------------------
 //Solenoid Variables
 //------------------------------------------------------
 	Compressor *grabComp = new Compressor(0);
-	Solenoid *gSol1 = new Solenoid(0); //arms up and down
-	Solenoid *gSol2 = new Solenoid(1); //open claw
-
+	Solenoid *armSol = new Solenoid(0); //arms up and down
+	Solenoid *clawSol = new Solenoid(1); //open claw
+	Solenoid *birdSol = new Solenoid(2); //deploy bird pole
 
 //------------------------------------------------------
 //Talon Variables
@@ -121,6 +120,8 @@ class Robot : public frc::IterativeRobot
 //Drive Variables
 //------------------------------------------------------
 	double teleMaxSpeed = 0.5;
+	bool isBirdOut = false;
+	bool isXDown = false;
 
 
 
@@ -348,6 +349,45 @@ bool turnComplete = false;
 			}
 		}
 
+
+	void DeployBirdPole()
+	{
+		if(js1->GetRawButton(1) && isBirdOut == false && isXDown == false)
+		{
+			birdSol->Set(true);
+			isBirdOut = true;
+			isXDown = true;
+		}
+		else if(!js1->GetRawButton(1) && isBirdOut == true)
+		{
+			isXDown = false;
+		}
+		else if(js1->GetRawButton(1) && isBirdOut == true && isXDown == false)
+		{
+			birdSol->Set(false);
+			isBirdOut = false;
+			isXDown = true;
+		}
+		else if(!js1->GetRawButton(1) && isBirdOut == false)
+		{
+			isXDown = false;
+		}
+	}
+	void winch()
+	{
+		if(js1->GetRawButton(1))
+		{
+			cWinch->Set(1);
+		}
+		else if(js1->GetRawButton(10))
+		{
+			cWinch->Set(-1);
+		}
+		else
+		{
+			cWinch->Set(0);
+		}
+	}
 	void teleopSkyLift()
 	{
 		bool goingUp = js1->GetRawButton(skyLiftUp);
@@ -357,29 +397,30 @@ bool turnComplete = false;
 			sLift ->Set(-0.2);
 		}
 		else if(goingUp){
-		 sLift ->Set(-.6);
+		 sLift ->Set(-1);
 		}
 		else if(goingDown){
-			sLift ->Set(.1);
+			sLift ->Set(.5);
 		}
 	}
+
 	void teleopArmControl() //Secondary controller controls to move grabber
 	{
 		if(js2->GetRawButton(pickupArmsUp))
 		{
-			gSol1->Set(false);
+			armSol->Set(false);
 		}
 		if(js2->GetRawButton(pickupArmsDown))
 		{
-			gSol1->Set(true);
+			armSol->Set(true);
 		}
 		if(js2->GetRawButton(openArms))
 		{
-			gSol2->Set(true);
+			clawSol->Set(true);
 		}
 		if(js2->GetRawButton(closeArms))
 		{
-			gSol2->Set(false);
+			clawSol->Set(false);
 		}
 	}
 
@@ -387,11 +428,11 @@ bool turnComplete = false;
 	{
 		if(js1->GetRawButton(cubeDrop))
 		{
-			gSol2->Set(true);
+			clawSol->Set(true);
 		}
 		else
 		{
-			gSol2->Set(false);
+			clawSol->Set(false);
 		}
 	}
 
@@ -399,22 +440,22 @@ bool turnComplete = false;
 	{
 		if(js2->GetRawButton(4))
 		{
-			gSol2->Set(true);
+			clawSol->Set(true);
 		}
 		else if(js2->GetRawButton(1))
 		{
-			gSol2->Set(false);
+			clawSol->Set(false);
 		}
 		else
 		{
-			gSol2->Set(false);
+			clawSol->Set(false);
 		}
 
 		if(js2->GetRawButton(5)){
-			gSol1->Set(true);
+			armSol->Set(true);
 		}
 		if(js2->GetRawButton(7)){
-			gSol1->Set(false);
+			armSol->Set(false);
 		}
 	}
 
@@ -883,7 +924,7 @@ bool turnComplete = false;
 
 	void ArcadeDrive(double yAxis, double rot)
 	{
-		//double noMove = 0.2; //Dead area of the axes
+		double noMove = 0.2; //Dead area of the axes
 		double maxSpeed = .5; //normal speed (not turbo)
 
 		if (fabs(rot) < noMove)
@@ -1092,7 +1133,6 @@ bool turnComplete = false;
 		//teleDrive();
 
 
-		double jsX=js1->GetRawAxis(joystickX);
 		double jsY=js1->GetRawAxis(joystickY);
 		double jsRot=js1->GetRawAxis(joystickRot);
 		ArcadeDrive(-jsY,jsRot);
