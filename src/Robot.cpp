@@ -6,7 +6,7 @@
 /*----------------------------------------------------------------------------*/
 
 //Dreadbot VIII - FIRST Power Up
-//Authors: Christian Vaughan, Ethan Leonello, Clara Gauthier, Anna Robelen
+//Authors: Christian Vaughan, Ethan Leonello, Clara Gauthier, Anna Robelen, Robert Lindskov, Justin McIntosh,
 
 #include <iostream>
 #include <string>
@@ -130,7 +130,7 @@ public:
 
 	Joystick *js1; //primary controller
 	Joystick *js2; //secondary controller
-	MecanumDrive *m_robotDrive;
+	MecanumDrive *m_robotDrive; //not currently in use
     AHRS *gyro;
 
 	void RobotInit()
@@ -473,9 +473,6 @@ bool turnComplete = false;
 			pWheelL->Set(0);
 			pWheelR->Set(0);
 		}
-
-
-
 	}
 
 	void LeftOne()
