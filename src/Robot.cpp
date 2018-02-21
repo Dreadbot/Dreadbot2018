@@ -71,18 +71,18 @@ class Robot : public frc::IterativeRobot
 	int retractBird = 2;
 	int extendBird = 3;
 	int deployBirdArm = 4;
-	int skyLiftDown = 7;
+	int skyLiftDown = 5;
 	int cubeDrop = 6;
-	int skyLiftUp = 5;
+	int skyLiftUp = 7;
 	int turboButton = 8;
 
 	//controller 2 buttons
 	int closeArms = 1;
 	int openArms = 4;
 	int pickupArmsUp = 5;
-	int throwCube = 8;
+	int throwCube = 6;
 	int pickupArmsDown = 7;
-	int captureCube = 6;
+	int captureCube = 8;
 
 
 //------------------------------------------------------
@@ -109,6 +109,10 @@ class Robot : public frc::IterativeRobot
 	int SixthAction = 625;
 	double LeftDifference = 0;
 	double RightDifference = 0;
+	int oneSecond = 50;
+	int halfSecond = 25;
+	int twoSeconds = 100;
+
 //------------------------------------------------------
 //Vision Variables
 //------------------------------------------------------
@@ -173,17 +177,15 @@ public:
 
 	void Wait(double t)
 	{
-		clock_t wait;
-		wait = clock();
-		double start = wait;
-		double timeLeft = (start + t) - wait;
-		while (wait <= start + t)
+		int wait = 0;
+		double timeLeft = t - wait;
+		while (wait <= t)
 		{
-			wait = clock();
 			distance = ultra->GetRangeInches();
 			frc::SmartDashboard::PutNumber("distance", distance);
-			timeLeft = (start + t) - wait;
+			timeLeft = t - wait;
 			frc::SmartDashboard::PutNumber("Time Left", timeLeft);
+			wait++;
 		}
 
 		return;
@@ -861,7 +863,7 @@ bool turnComplete = false;
 
 	void AutonTesting()
 	{
-		DriveForward(.5, 1000);
+		DriveForward(.5, 50);
 	}
 
 	void MecDrive(double xAxis, double yAxis, double rot) //homemade mecanum drive!
@@ -927,58 +929,58 @@ bool turnComplete = false;
 	void TestAll()
 	{
 		lf -> Set(ControlMode::PercentOutput, 0.5);
-		Wait(1000);
+		Wait(twoSeconds);
 		lf -> Set(ControlMode::PercentOutput, 0);
 
 		rf -> Set(ControlMode::PercentOutput, 0.5);
-		Wait(1000);
+		Wait(twoSeconds);
 		rf -> Set(ControlMode::PercentOutput, 0);
 
 		lr -> Set(ControlMode::PercentOutput, 0.5);
-		Wait(1000);
+		Wait(twoSeconds);
 		lr -> Set(ControlMode::PercentOutput, 0);
 
 		rr -> Set(ControlMode::PercentOutput, 0.5);
-		Wait(1000);
+		Wait(twoSeconds);
 		rr -> Set(ControlMode::PercentOutput, 0);
 
 		cWinch -> Set(ControlMode::PercentOutput, .5);
-		Wait(1000);
+		Wait(twoSeconds);
 		cWinch -> Set(ControlMode::PercentOutput, -.5);
-		Wait(1000);
+		Wait(twoSeconds);
 		cWinch -> Set(ControlMode::PercentOutput, 0);
 
 		sLift -> Set(ControlMode::PercentOutput, -1);
-		Wait(1000);
+		Wait(twoSeconds);
 		sLift -> Set(ControlMode::PercentOutput, .5);
-		Wait(1000);
+		Wait(twoSeconds);
 		sLift -> Set(ControlMode::PercentOutput, 0);
 
 		cExtend -> Set(ControlMode::PercentOutput, .5);
-		Wait(1000);
+		Wait(twoSeconds);
 		cExtend -> Set(ControlMode::PercentOutput, -.5);
-		Wait(1000);
+		Wait(twoSeconds);
 		cExtend -> Set(ControlMode::PercentOutput, 0);
 
 		pWheelL -> Set(ControlMode::PercentOutput, .5);
-		Wait(1000);
+		Wait(twoSeconds);
 		pWheelL -> Set(ControlMode::PercentOutput, 0);
 		pWheelR -> Set(ControlMode::PercentOutput, .5);
-		Wait(1000);
+		Wait(twoSeconds);
 		pWheelR -> Set(ControlMode::PercentOutput, 0);
 
 		armSol->Set(true);
-		Wait(500);
+		Wait(oneSecond);
 		armSol->Set(false);
-		Wait(500);
+		Wait(oneSecond);
 
 		clawSol->Set(true);
-		Wait(500);
+		Wait(oneSecond);
 		clawSol->Set(false);
-		Wait(500);
+		Wait(oneSecond);
 
 		birdSol->Set(true);
-		Wait(500);
+		Wait(oneSecond);
 		birdSol->Set(false);
 	}
 
@@ -1181,7 +1183,6 @@ bool turnComplete = false;
 				else if(robotPos == 3){
 					LeftThree();
 				}
-
 			}
 		}
 	}
@@ -1197,14 +1198,11 @@ bool turnComplete = false;
 	void TeleopPeriodic()
 	{
 
-
 		//teleDrive();
-
 
 		double jsY=js1->GetRawAxis(joystickY);
 		double jsRot=js1->GetRawAxis(joystickRot);
 		ArcadeDrive(-jsY,jsRot);
-
 
 		//teleopGrabToggle();
 
@@ -1224,7 +1222,6 @@ bool turnComplete = false;
 		}
 
 		ActuateBirdPole(PoleExtend);
-
 	}
 
 	void TestPeriodic()
