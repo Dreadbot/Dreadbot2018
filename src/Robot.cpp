@@ -71,18 +71,18 @@ class Robot : public frc::IterativeRobot
 	int retractBird = 2;
 	int extendBird = 3;
 	int deployBirdArm = 4;
-	int skyLiftDown = 5;
+	int skyLiftDown = 7;
 	int cubeDrop = 6;
-	int skyLiftUp = 7;
+	int skyLiftUp = 5;
 	int turboButton = 8;
 
 	//controller 2 buttons
 	int closeArms = 1;
 	int openArms = 4;
 	int pickupArmsUp = 5;
-	int throwCube = 6;
+	int throwCube = 8;
 	int pickupArmsDown = 7;
-	int captureCube = 8;
+	int captureCube = 6;
 
 
 //------------------------------------------------------
@@ -121,7 +121,7 @@ class Robot : public frc::IterativeRobot
 //------------------------------------------------------
 	double teleMaxSpeed = 0.5;
 	bool isBirdOut = false;
-	bool isXDown = false;
+	bool isYDown = false;
 
 
 
@@ -352,25 +352,25 @@ bool turnComplete = false;
 
 	void DeployBirdPole()
 	{
-		if(js1->GetRawButton(1) && isBirdOut == false && isXDown == false)
+		if(js1->GetRawButton(4) && isBirdOut == false && isYDown == false)
 		{
 			birdSol->Set(true);
 			isBirdOut = true;
-			isXDown = true;
+			isYDown = true;
 		}
-		else if(!js1->GetRawButton(1) && isBirdOut == true)
+		else if(!js1->GetRawButton(4) && isBirdOut == true)
 		{
-			isXDown = false;
+			isYDown = false;
 		}
-		else if(js1->GetRawButton(1) && isBirdOut == true && isXDown == false)
+		else if(js1->GetRawButton(4) && isBirdOut == true && isYDown == false)
 		{
 			birdSol->Set(false);
 			isBirdOut = false;
-			isXDown = true;
+			isYDown = true;
 		}
-		else if(!js1->GetRawButton(1) && isBirdOut == false)
+		else if(!js1->GetRawButton(4) && isBirdOut == false)
 		{
-			isXDown = false;
+			isYDown = false;
 		}
 	}
 	void winch()
@@ -859,6 +859,11 @@ bool turnComplete = false;
 		}
 	}
 
+	void AutonTesting()
+	{
+		DriveForward(.5, 1000);
+	}
+
 	void MecDrive(double xAxis, double yAxis, double rot) //homemade mecanum drive!
 	{
 		double noMove = 0.2; //Dead area of the axes
@@ -918,6 +923,64 @@ bool turnComplete = false;
 //		rr -> Set(ControlMode::PercentOutput, -rrSpeed*maxSpeed);
 //
 //	}
+
+	void TestAll()
+	{
+		lf -> Set(ControlMode::PercentOutput, 0.5);
+		Wait(1000);
+		lf -> Set(ControlMode::PercentOutput, 0);
+
+		rf -> Set(ControlMode::PercentOutput, 0.5);
+		Wait(1000);
+		rf -> Set(ControlMode::PercentOutput, 0);
+
+		lr -> Set(ControlMode::PercentOutput, 0.5);
+		Wait(1000);
+		lr -> Set(ControlMode::PercentOutput, 0);
+
+		rr -> Set(ControlMode::PercentOutput, 0.5);
+		Wait(1000);
+		rr -> Set(ControlMode::PercentOutput, 0);
+
+		cWinch -> Set(ControlMode::PercentOutput, .5);
+		Wait(1000);
+		cWinch -> Set(ControlMode::PercentOutput, -.5);
+		Wait(1000);
+		cWinch -> Set(ControlMode::PercentOutput, 0);
+
+		sLift -> Set(ControlMode::PercentOutput, -1);
+		Wait(1000);
+		sLift -> Set(ControlMode::PercentOutput, .5);
+		Wait(1000);
+		sLift -> Set(ControlMode::PercentOutput, 0);
+
+		cExtend -> Set(ControlMode::PercentOutput, .5);
+		Wait(1000);
+		cExtend -> Set(ControlMode::PercentOutput, -.5);
+		Wait(1000);
+		cExtend -> Set(ControlMode::PercentOutput, 0);
+
+		pWheelL -> Set(ControlMode::PercentOutput, .5);
+		Wait(1000);
+		pWheelL -> Set(ControlMode::PercentOutput, 0);
+		pWheelR -> Set(ControlMode::PercentOutput, .5);
+		Wait(1000);
+		pWheelR -> Set(ControlMode::PercentOutput, 0);
+
+		armSol->Set(true);
+		Wait(500);
+		armSol->Set(false);
+		Wait(500);
+
+		clawSol->Set(true);
+		Wait(500);
+		clawSol->Set(false);
+		Wait(500);
+
+		birdSol->Set(true);
+		Wait(500);
+		birdSol->Set(false);
+	}
 
 	void ArcadeDrive(double yAxis, double rot)
 	{
@@ -1051,6 +1114,9 @@ bool turnComplete = false;
 
 	void AutonomousPeriodic()
 	{
+		//=========================================================================
+		TestAll(); //===========comment this out when not in use!=============
+		//=========================================================================
 		//These are the numbers coming from the vision camera
 		centerX = SmartDashboard::GetNumber("yellowbox.contour_1.cx", -1);
 		centerY = SmartDashboard::GetNumber("yellowbox.contour_1.cy", -1);
@@ -1078,7 +1144,9 @@ bool turnComplete = false;
 		FourthAction = SmartDashboard::GetNumber("Fourth Action Space", FourthAction);
 		FifthAction = SmartDashboard::GetNumber("Fifth Action Space", FifthAction);
 		SixthAction = SmartDashboard::GetNumber("Sixth Action Space", SixthAction);
+
 		frc::SmartDashboard::PutNumber("distance", distance);
+
 		timer ++;
 		LeftDifference = currentAngle*.0125;
 		RightDifference = currentAngle*.0125;
@@ -1088,6 +1156,7 @@ bool turnComplete = false;
 		frc::SmartDashboard::PutBoolean("TurnComplete?", turnComplete);
 		frc::SmartDashboard::PutNumber("State", state);
 		frc::SmartDashboard::PutNumber("Right Diff", RightDifference);
+
 		if(gameData.length() > 0){
 			if(gameData[0] == 'L'){
 				if(robotPos == 1){
@@ -1121,6 +1190,8 @@ bool turnComplete = false;
 	void TeleopInit()
 	{
 		gyro->Reset();
+		isBirdOut = false;
+		isYDown = false;
 	}
 
 	void TeleopPeriodic()
@@ -1141,6 +1212,8 @@ bool turnComplete = false;
 		//Drop();
 		pickUpWheels();
 		teleopSkyLift();
+		DeployBirdPole();
+		winch();
 
 		int PoleExtend=0;
 		if (js1->GetRawButton(extendBird)){ //Button B extends the pole
