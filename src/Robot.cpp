@@ -1360,6 +1360,7 @@ bool turnComplete = false;
 	void TestPeriodic()
 	{
 		//if(js1->GetRawButton(1){TestAll();})
+		testWinch();
 
 	}
 
