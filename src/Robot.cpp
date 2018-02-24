@@ -345,12 +345,12 @@ bool turnComplete = false;
 		{
 			if (extend > 0)
 			{
-				cExtend->Set(0.5);
+				cExtend->Set(1);
 			}
 
 			else if (extend < 0)
 			{
-				cExtend->Set(-0.5);
+				cExtend->Set(-1);
 			}
 
 			else if (extend == 0)
@@ -387,10 +387,6 @@ bool turnComplete = false;
 	{
 		if(js1->GetRawButton(1))
 		{
-			cWinch->Set(1);
-		}
-		else if(js1->GetRawButton(10))
-		{
 			cWinch->Set(-1);
 		}
 		else
@@ -398,19 +394,36 @@ bool turnComplete = false;
 			cWinch->Set(0);
 		}
 	}
+
+	void testWinch()
+	{
+		if(js1->GetRawButton(1))
+		{
+			cWinch->Set(-1);
+		}
+		else if(js1->GetRawButton(10))
+		{
+			cWinch->Set(1);
+		}
+		else
+		{
+			cWinch->Set(0);
+		}
+	}
+
 	void teleopSkyLift()
 	{
 		bool goingUp = js1->GetRawButton(skyLiftUp);
 		bool goingDown = js1->GetRawButton(skyLiftDown);
 
 		if(!goingUp && !goingDown){
-			sLift ->Set(-0.2);
+			sLift ->Set(0);
 		}
 		else if(goingUp){
 		 sLift ->Set(-1);
 		}
 		else if(goingDown){
-			sLift ->Set(.5);
+			sLift ->Set(.8);
 		}
 	}
 
@@ -436,14 +449,7 @@ bool turnComplete = false;
 
 	void Drop()
 	{
-		if(js1->GetRawButton(cubeDrop))
-		{
-			clawSol->Set(true);
-		}
-		else
-		{
-			clawSol->Set(false);
-		}
+		clawSol->Set(true);
 	}
 
 	void teleopGrabToggle()
@@ -472,8 +478,8 @@ bool turnComplete = false;
 	void pickUpWheels() //Secondary controller controls to turn on wheels
 	{
 		if(js2->GetRawButton(captureCube)){
-			pWheelL->Set(.75);
-			pWheelR->Set(-.75);
+			pWheelL->Set(1);
+			pWheelR->Set(-1);
 		}
 		else if (js2->GetRawButton(throwCube)){
 			pWheelL->Set(-.6);
@@ -1208,11 +1214,12 @@ bool turnComplete = false;
 	void TeleopPeriodic()
 	{
 
-		//teleDrive();
-
+		double jsX=js1->GetRawAxis(joystickX);
 		double jsY=js1->GetRawAxis(joystickY);
 		double jsRot=js1->GetRawAxis(joystickRot);
-		ArcadeDrive(-jsY,jsRot);
+		MecDrive(jsX,-jsY,jsRot);
+
+		//ArcadeDrive(-jsY,jsRot);
 
 		//teleopGrabToggle();
 
@@ -1222,6 +1229,7 @@ bool turnComplete = false;
 		teleopSkyLift();
 		DeployBirdPole();
 		winch();
+		frc::SmartDashboard::PutString("its a me ethan ha ha", "5");
 
 		int PoleExtend=0;
 		if (js1->GetRawButton(extendBird)){ //Button B extends the pole
@@ -1232,11 +1240,12 @@ bool turnComplete = false;
 		}
 
 		ActuateBirdPole(PoleExtend);
+
 	}
 
 	void TestPeriodic()
 	{
-
+		testWinch();
 	}
 
 private:
