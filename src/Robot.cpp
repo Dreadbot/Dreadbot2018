@@ -95,12 +95,12 @@ class Robot : public frc::IterativeRobot
 //	int autonPosition = 0;
 //	bool autonIsLeftSwitch = false;
 //	bool autonIsBlueAlliance = false;
-	int robotPos;
+	double robotPos;
 	int timer;
 	int state;
 	std::string gameData;
 	int currentAngle;
-	double autonSpeed = 0.25;
+	double autonSpeed = 0.5;
 	int FirstAction = 100;
 	int SecondAction = 200;
 	int ThirdAction = 350;
@@ -109,6 +109,7 @@ class Robot : public frc::IterativeRobot
 	int SixthAction = 625;
 	double LeftDifference = 0;
 	double RightDifference = 0;
+	frc::SendableChooser<int> posChooser;
 	int oneSecond = 50;
 	int halfSecond = 25;
 	int twoSeconds = 100;
@@ -153,8 +154,15 @@ public:
     	m_robotDrive = new MecanumDrive(*lf,*lr, *rf,*rr);
     	m_robotDrive->SetExpiration(0.5);
     	m_robotDrive->SetSafetyEnabled(false);
+	//SmartDashboard::PutNumber("robotPos", robotPos);
 
+    	posChooser.AddDefault("Left", 3);
+    	posChooser.AddObject("Center", 2);
+    	posChooser.AddObject("Right", 1);
+    	frc::SmartDashboard::PutData("robotPos", &posChooser);
 	}
+
+
 
 
 	/*
@@ -631,10 +639,10 @@ bool turnComplete = false;
 	}
 	void LeftThree()
 	{
-		FirstAction = 50;
-		SecondAction = 100;
-		ThirdAction = 150;
-		FourthAction = 200;
+		FirstAction = 300;
+		SecondAction = 350;
+		ThirdAction = 400;
+		FourthAction = 450;
 
 		if(timer < FirstAction){
 			state = 1;
@@ -672,10 +680,10 @@ bool turnComplete = false;
 	}
 	void RightOne()
 	{
-		FirstAction = 50;
-		SecondAction = 100;
-		ThirdAction = 150;
-		FourthAction = 200;
+		FirstAction = 300;
+		SecondAction = 350;
+		ThirdAction = 400;
+		FourthAction = 450;
 
 		if(timer < FirstAction){
 			state = 1;
@@ -1038,7 +1046,8 @@ bool turnComplete = false;
 	void AutonomousInit() override
 	{
 		timer = 0;
-		robotPos = SmartDashboard::GetNumber("robotPos", 1);
+		robotPos = posChooser.GetSelected();
+
 		gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
 		//m_autoSelected = m_chooser.GetSelected();
 		// m_autoSelected = SmartDashboard::GetString(
@@ -1139,7 +1148,7 @@ bool turnComplete = false;
 		//SmartDashboard::GetBoolean("Auton Is Blue Alliance", autonIsBlueAlliance);
 		//SmartDashboard::GetBoolean("Auton Is Going to Left Switch?", autonIsLeftSwitch);
 
-		autonSpeed = SmartDashboard::GetNumber("autonSpeed", autonSpeed);
+		//autonSpeed = SmartDashboard::GetNumber("autonSpeed", autonSpeed);
 		FirstAction = SmartDashboard::GetNumber("First Action Space", FirstAction);
 		SecondAction = SmartDashboard::GetNumber("Second Action Space", SecondAction);
 		ThirdAction = SmartDashboard::GetNumber("Third Action Space", ThirdAction);
@@ -1158,6 +1167,7 @@ bool turnComplete = false;
 		frc::SmartDashboard::PutBoolean("TurnComplete?", turnComplete);
 		frc::SmartDashboard::PutNumber("State", state);
 		frc::SmartDashboard::PutNumber("Right Diff", RightDifference);
+		frc::SmartDashboard::PutString("gameData", gameData);
 
 		if(gameData.length() > 0){
 			if(gameData[0] == 'L'){
@@ -1181,7 +1191,7 @@ bool turnComplete = false;
 					RightTwo();
 				}
 				else if(robotPos == 3){
-					LeftThree();
+					RightThree();
 				}
 			}
 		}
