@@ -101,6 +101,7 @@ class Robot : public frc::IterativeRobot
 	std::string gameData;
 	int currentAngle;
 	double autonSpeed = 0.5;
+	double autonTurnSpeed = 0.5;
 	int FirstAction = 100;
 	int SecondAction = 200;
 	int ThirdAction = 350;
@@ -109,10 +110,12 @@ class Robot : public frc::IterativeRobot
 	int SixthAction = 625;
 	double LeftDifference = 0;
 	double RightDifference = 0;
+	bool LiftComplete;
 	frc::SendableChooser<int> posChooser;
 	int oneSecond = 50;
 	int halfSecond = 25;
 	int twoSeconds = 100;
+
 
 //------------------------------------------------------
 //Vision Variables
@@ -155,10 +158,10 @@ public:
     	m_robotDrive->SetExpiration(0.5);
     	m_robotDrive->SetSafetyEnabled(false);
 	//SmartDashboard::PutNumber("robotPos", robotPos);
-
-    	posChooser.AddDefault("Left", 3);
+    	posChooser.AddDefault("Auton Line", 0);
+    	posChooser.AddObject("Left", 1);
     	posChooser.AddObject("Center", 2);
-    	posChooser.AddObject("Right", 1);
+    	posChooser.AddObject("Right", 3);
     	frc::SmartDashboard::PutData("robotPos", &posChooser);
 	}
 
@@ -275,6 +278,9 @@ public:
 		//raise or lower the lifting device
 		if (x == 0)
 		{
+			if(LiftComplete == false){
+			sLift->Set(-1);
+			}
 
 		}
 
@@ -285,7 +291,7 @@ public:
 
 		else
 		{
-
+			sLift->Set(0);
 		}
 	}
 bool turnComplete = false;
@@ -297,10 +303,10 @@ bool turnComplete = false;
 //		frc::SmartDashboard::PutNumber("Current Angle", CurrentAngle);
 		int slop = 5;
 		if(wantAngle < currentAngle - slop){
-			TurnLeft(autonSpeed);
+			TurnLeft(autonTurnSpeed);
 		}
 		else if(wantAngle > currentAngle + slop){
-			TurnRight(autonSpeed);
+			TurnRight(autonTurnSpeed);
 		}
 		else{
 			Stop();
@@ -436,15 +442,10 @@ bool turnComplete = false;
 
 	void Drop()
 	{
-		if(js1->GetRawButton(cubeDrop))
-		{
-			clawSol->Set(true);
+		armSol->Set(true);
+		clawSol->Set(true);
 		}
-		else
-		{
-			clawSol->Set(false);
-		}
-	}
+
 
 	void teleopGrabToggle()
 	{
@@ -486,87 +487,53 @@ bool turnComplete = false;
 	}
 
 	void LeftOne()
+
 	{
+		FirstAction = 40;
+		SecondAction = 160;
+		ThirdAction = 210;
+		FourthAction = 220;
+
 		if(timer < FirstAction){
-			state = 1;
-
+			state = 1; //Lifting, from start to first action
 		}
-		if(timer == FirstAction){
-			state = 2;
+		if(timer < SecondAction && state == 1 && timer > FirstAction){
+			state = 2; //Driving, between first and second action
 		}
-		if(timer > FirstAction && state == 2){
-			state = 3;
+		if(timer == SecondAction && state == 2){
+			state = 3;//Stopping at second action
 		}
-		if(state == 3 && turnComplete){
-			state = 4;
+		if(state == 3){
+			state = 4; //Turning Left, setting timer to third action when done
 		}
-		if(state == 4 && timer < SecondAction){
-			state = 5;
+		if(state == 4 && turnComplete){
+			state = 5; //Driving, between third and fourth action
 		}
-		if(state == 5 && timer > SecondAction && timer < ThirdAction){
-			state = 6;
-		}
-		if(state == 6 && timer == ThirdAction){
-			state = 7;
-		}
-		if(state == 7 && timer > ThirdAction){
-			state = 8;
-		}
-		if(state == 8 && turnComplete){
-			state = 9;
-		}
-		if(state == 9 && timer >= FourthAction && timer < FifthAction){
-			state = 10;
-		}
-		if(state == 10 && timer == FifthAction){
-			state = 11;
-		}
-		if(state == 11 && timer > FifthAction && timer < SixthAction){
-			state = 12;
+		if(state == 5 && timer == FourthAction){
+			state = 6;// Stopping, at fourth action
 		}
 
-		if (state == 1){
-			DriveStraight(autonSpeed);
-
-		}
-		else if (state == 2){
-			Stop();
-		}
-		else if (state == 3){
-			Turn(-90);
-		}
-		else if (state == 4){
-			Stop();
-
-			timer = FirstAction;
-
-		}
-		else if (state == 5){
-			turnComplete = false;
+		if(state == 1){
 			Lifter(0);
 		}
-		else if (state == 6){
+		else if(state == 2){
+			LiftComplete = true;
+			sLift->Set(-.2);
 			DriveStraight(autonSpeed);
-		}
-		else if(state == 7){
-			Stop();
-		}
-		else if(state == 8){
-			Turn(-90);
-		}
 
-		else if(state == 9){
-			Stop();
-			timer = FourthAction;
-			turnComplete = false;
 		}
-		else if(state == 10){
+		else if(state == 3){
+			Stop();
+		}
+		else if(state == 4){
+			Turn(90);
+			timer = ThirdAction;
+		}
+		else if(state == 5){
 			DriveStraight(autonSpeed);
 		}
-		else if (state == 11){
+		else if(state == 6){
 			Stop();
-		}
-		else if (state == 12){
 			Drop();
 		}
 	}
@@ -639,138 +606,62 @@ bool turnComplete = false;
 	}
 	void LeftThree()
 	{
-		FirstAction = 300;
-		SecondAction = 350;
-		ThirdAction = 400;
-		FourthAction = 450;
-
 		if(timer < FirstAction){
 			state = 1;
-			timer = FirstAction;
 		}
-		if(timer < SecondAction && state == 1 && timer > FirstAction){
+		if(timer == FirstAction){
 			state = 2;
 		}
-		if(timer == SecondAction && state == 2){
+		if(timer > FirstAction && state == 2){
 			state = 3;
 		}
-		if(state == 3){
+		if(state == 3 && turnComplete){
 			state = 4;
 		}
-		if(state == 4 && turnComplete){
+		if(state == 4 && timer < SecondAction){
 			state = 5;
 		}
-
-		if(state == 1){
-			Lifter(1);
-		}
-		else if(state == 2){
-			DriveStraight(autonSpeed);
-		}
-		else if(state == 3){
-			Stop();
-		}
-		else if(state == 4){
-			Turn(90);
-		}
-		else if(state == 5){
-			Drop();
-		}
-
-	}
-	void RightOne()
-	{
-		FirstAction = 300;
-		SecondAction = 350;
-		ThirdAction = 400;
-		FourthAction = 450;
-
-		if(timer < FirstAction){
-			state = 1;
-			timer = FirstAction;
-		}
-		if(timer < SecondAction && state == 1 && timer > FirstAction){
-			state = 2;
-		}
-		if(timer == SecondAction && state == 2){
-			state = 3;
-		}
-		if(state == 3){
-			state = 4;
-		}
-		if(state == 4 && turnComplete){
-			state = 5;
-		}
-
-		if(state == 1){
-			Lifter(1);
-		}
-		else if(state == 2){
-			DriveStraight(autonSpeed);
-		}
-		else if(state == 3){
-			Stop();
-		}
-		else if(state == 4){
-			Turn(-90);
-		}
-		else if(state == 5){
-			Drop();
-		}
-
-	}
-	void RightTwo()
-	{
-		FirstAction = 50;
-		SecondAction = 100;
-		ThirdAction = 150;
-		FourthAction = 200;
-		SixthAction = 250;
-		if(timer < FirstAction){
-			state = 1;
-			timer = FirstAction;
-		}
-		if(timer > FirstAction && timer < SecondAction && state == 1){
-			state = 2;
-		}
-		if(timer > SecondAction && timer < ThirdAction && state == 2) {
-			state = 3;
-		}
-		if(timer == ThirdAction){
-			state = 4;
-		}
-		if(timer > ThirdAction && timer < FourthAction && state == 3){
-			state = 5;
-		}
-		if(timer > FourthAction && timer < FifthAction && state == 4){
+		if(state == 5 && timer > SecondAction && timer < ThirdAction){
 			state = 6;
 		}
-		if(timer == FifthAction) {
+		if(state == 6 && timer == ThirdAction){
 			state = 7;
 		}
-		if(timer < SixthAction && state == 7){
+		if(state == 7 && timer > ThirdAction){
 			state = 8;
 		}
-		if(timer == SixthAction){
+		if(state == 8 && turnComplete){
 			state = 9;
 		}
-
-		if(state == 1){
-			Lifter(1);
+		if(state == 9 && timer >= FourthAction && timer < FifthAction){
+			state = 10;
 		}
-		else if(state == 2){
-			Turn(90);
+		if(state == 10 && timer == FifthAction){
+			state = 11;
 		}
-		else if(state == 3){
+		if(state == 11 && timer > FifthAction && timer < SixthAction){
+			state = 12;
+		}
+		if (state == 1){
 			DriveStraight(autonSpeed);
 		}
-		else if(state == 4){
+		else if (state == 2){
 			Stop();
 		}
-		else if(state == 5){
+		else if (state == 3){
 			Turn(-90);
 		}
-		else if(state == 6){
+		else if (state == 4){
+			Stop();
+
+			timer = FirstAction;
+
+		}
+		else if (state == 5){
+			turnComplete = false;
+			Lifter(0);
+		}
+		else if (state == 6){
 			DriveStraight(autonSpeed);
 		}
 		else if(state == 7){
@@ -779,11 +670,62 @@ bool turnComplete = false;
 		else if(state == 8){
 			Turn(-90);
 		}
+
 		else if(state == 9){
+			Stop();
+			timer = FourthAction;
+			turnComplete = false;
+		}
+		else if(state == 10){
+			DriveStraight(autonSpeed);
+		}
+		else if (state == 11){
+			Stop();
+		}
+		else if (state == 12){
 			Drop();
 		}
 	}
-	void RightThree()
+	void LeftScale(){
+		FirstAction = 300;
+		SecondAction = 350;
+		ThirdAction = 400;
+		FourthAction = 450;
+
+		if(timer < FirstAction){
+			state = 1;
+			timer = FirstAction;
+		}
+		if(timer < SecondAction && state == 1 && timer > FirstAction){
+			state = 2;
+		}
+		if(timer == SecondAction && state == 2){
+			state = 3;
+		}
+		if(state == 3){
+			state = 4;
+		}
+		if(state == 4 && turnComplete){
+			state = 5;
+		}
+
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 3){
+			Stop();
+		}
+		else if(state == 4){
+			Turn(90);
+		}
+		else if(state == 5){
+			Drop();
+		}
+	}
+	void RightOne()
 	{
 		if(timer < FirstAction){
 					state = 1;
@@ -868,7 +810,177 @@ bool turnComplete = false;
 			Drop();
 		}
 	}
+	void RightTwo()
+	{
+		FirstAction = 50;
+		SecondAction = 100;
+		ThirdAction = 150;
+		FourthAction = 200;
+		SixthAction = 250;
+		if(timer < FirstAction){
+			state = 1;
 
+		}
+		if(timer > FirstAction && timer < SecondAction && state == 1){
+			state = 2;
+		}
+		if(timer > SecondAction && timer < ThirdAction && state == 2) {
+			state = 3;
+		}
+		if(timer == ThirdAction){
+			state = 4;
+		}
+		if(timer > ThirdAction && timer < FourthAction && state == 3){
+			state = 5;
+		}
+		if(timer > FourthAction && timer < FifthAction && state == 4){
+			state = 6;
+		}
+		if(timer == FifthAction) {
+			state = 7;
+		}
+		if(timer < SixthAction && state == 7){
+			state = 8;
+		}
+		if(timer == SixthAction){
+			state = 9;
+		}
+
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			Turn(90);
+		}
+		else if(state == 3){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 4){
+			Stop();
+		}
+		else if(state == 5){
+			Turn(-90);
+		}
+		else if(state == 6){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 7){
+			Stop();
+		}
+		else if(state == 8){
+			Turn(-90);
+		}
+		else if(state == 9){
+			Drop();
+		}
+	}
+	void RightThree()
+	{
+		FirstAction = 40;
+		SecondAction = 160;
+		ThirdAction = 210;
+		FourthAction = 230;
+
+		if(timer < FirstAction){
+			state = 1; //Lifting, from start to first action
+		}
+		if(timer < SecondAction && state == 1 && timer > FirstAction){
+			state = 2; //Driving, between first and second action
+		}
+		if(timer == SecondAction && state == 2){
+			state = 3;//Stopping at second action
+		}
+		if(state == 3){
+			state = 4; //Turning Left, setting timer to third action when done
+		}
+		if(state == 4 && turnComplete){
+			state = 5; //Driving, between third and fourth action
+		}
+		if(state == 5 && timer == FourthAction){
+			state = 6;// Stopping, at fourth action
+		}
+
+		if(state == 1){
+			Lifter(0);
+		}
+		else if(state == 2){
+			LiftComplete = true;
+			sLift->Set(-.2);
+			DriveStraight(autonSpeed);
+
+		}
+		else if(state == 3){
+			Stop();
+		}
+		else if(state == 4){
+			Turn(-90);
+			timer = ThirdAction;
+		}
+		else if(state == 5){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 6){
+			Stop();
+			Drop();
+		}
+	}
+	void RightScale(){
+		FirstAction = 300;
+		SecondAction = 350;
+		ThirdAction = 400;
+		FourthAction = 450;
+
+		if(timer < FirstAction){
+			state = 1;
+			timer = FirstAction;
+		}
+		if(timer < SecondAction && state == 1 && timer > FirstAction){
+			state = 2;
+		 }
+		if(timer == SecondAction && state == 2){
+			state = 3;
+		}
+		if(state == 3){
+			state = 4;
+		}
+		if(state == 4 && turnComplete){
+			state = 5;
+		}
+
+		if(state == 1){
+			Lifter(1);
+		}
+		else if(state == 2){
+			DriveStraight(autonSpeed);
+		}
+		else if(state == 3){
+			Stop();
+		}
+		else if(state == 4){
+			Turn(-90);
+		}
+		else if(state == 5){
+			Drop();
+		}
+
+	}
+	void AutonLine(){
+		FirstAction = 120;
+
+		if(timer < FirstAction){
+			state = 1;
+		}
+		if(timer == FirstAction){
+			state = 2;
+		}
+
+		if(state == 1){
+			DriveStraight(autonSpeed); //Driving, between start and first action
+		}
+		if(state == 2){
+			Stop();
+		}
+	}
 	void AutonTesting()
 	{
 		DriveForward(.5, 50);
@@ -1004,7 +1116,7 @@ bool turnComplete = false;
 			maxSpeed = 1;
 
 		else
-			maxSpeed = .5;
+			maxSpeed = 0.5;
 
 		double lfSpeed = -yAxis - rot;
 		double rfSpeed = +yAxis - rot;
@@ -1045,6 +1157,7 @@ bool turnComplete = false;
 
 	void AutonomousInit() override
 	{
+		LiftComplete = false;
 		timer = 0;
 		robotPos = posChooser.GetSelected();
 
@@ -1125,9 +1238,7 @@ bool turnComplete = false;
 
 	void AutonomousPeriodic()
 	{
-		//=========================================================================
-		TestAll(); //===========comment this out when not in use!=============
-		//=========================================================================
+
 		//These are the numbers coming from the vision camera
 		centerX = SmartDashboard::GetNumber("yellowbox.contour_1.cx", -1);
 		centerY = SmartDashboard::GetNumber("yellowbox.contour_1.cy", -1);
@@ -1170,30 +1281,37 @@ bool turnComplete = false;
 		frc::SmartDashboard::PutString("gameData", gameData);
 
 		if(gameData.length() > 0){
-			if(gameData[0] == 'L'){
-				if(robotPos == 1){
-					LeftOne();
-				}
-				else if(robotPos == 2){
-					LeftTwo();
-				}
-				else if(robotPos == 3){
-					LeftThree();
-				}
-
+			if(robotPos == 0){
+				AutonLine();
 			}
-
-			if(gameData[0] == 'R'){
-				if(robotPos == 1){
-					RightOne();
-				}
-				else if(robotPos == 2){
-					RightTwo();
-				}
-				else if(robotPos == 3){
-					RightThree();
-				}
+			else if(gameData[1] == 'L' && robotPos == 1){
+				LeftScale();
 			}
+			else if(gameData[1] == 'R' && robotPos == 3){
+				RightScale();
+			}
+			else if(gameData[0] == 'L' && robotPos == 1){
+				LeftOne();
+			}
+			else if(gameData[0] == 'R' && robotPos == 3){
+				RightThree();
+			}
+			else if(gameData[0] == 'L' && robotPos == 3){
+				LeftThree();
+			}
+			else if(gameData[0] == 'R' && robotPos == 1){
+				RightThree();
+			}
+			else if(gameData[0] == 'L' && robotPos == 2){
+				LeftTwo();
+			}
+			else if(gameData[0] == 'R' && robotPos == 2){
+				RightTwo();
+			}
+			else{}
+
+
+
 		}
 	}
 
@@ -1210,9 +1328,14 @@ bool turnComplete = false;
 
 		//teleDrive();
 
+//		double jsY=js1->GetRawAxis(joystickY);
+//		double jsRot=js1->GetRawAxis(joystickRot);
+//		ArcadeDrive(-jsY,jsRot);
+
 		double jsY=js1->GetRawAxis(joystickY);
+		double jsX=js1->GetRawAxis(joystickX);
 		double jsRot=js1->GetRawAxis(joystickRot);
-		ArcadeDrive(-jsY,jsRot);
+		MecDrive(jsX,-jsY,jsRot);
 
 		//teleopGrabToggle();
 
@@ -1236,6 +1359,7 @@ bool turnComplete = false;
 
 	void TestPeriodic()
 	{
+		//if(js1->GetRawButton(1){TestAll();})
 
 	}
 
