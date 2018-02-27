@@ -163,6 +163,26 @@ public:
     	posChooser.AddObject("Center", 2);
     	posChooser.AddObject("Right", 3);
     	frc::SmartDashboard::PutData("robotPos", &posChooser);
+
+    	lf->ConfigNominalOutputForward(0,0);
+    	lr->ConfigNominalOutputForward(0,0);
+    	rf->ConfigNominalOutputForward(0,0);
+    	rr->ConfigNominalOutputForward(0,0);
+
+    	lf->ConfigNominalOutputReverse(0,0);
+    	lr->ConfigNominalOutputReverse(0,0);
+    	rf->ConfigNominalOutputReverse(0,0);
+    	rr->ConfigNominalOutputReverse(0,0);
+
+    	lf->ConfigPeakOutputForward(1,0);
+    	lr->ConfigPeakOutputForward(1,0);
+    	rf->ConfigPeakOutputForward(1,0);
+    	rr->ConfigPeakOutputForward(1,0);
+
+    	lf->ConfigPeakOutputReverse(-1,0);
+    	lr->ConfigPeakOutputReverse(-1,0);
+    	rf->ConfigPeakOutputReverse(-1,0);
+    	rr->ConfigPeakOutputReverse(-1,0);
 	}
 
 
@@ -253,24 +273,26 @@ public:
 		}
 
 		else{
-			lf -> Set(ControlMode :: PercentOutput, -speed);
-			rf -> Set(ControlMode :: PercentOutput, speed);
+			lf -> Set(ControlMode :: PercentOutput, speed);
 			lr -> Set(ControlMode :: PercentOutput, -speed);
 			rr -> Set(ControlMode :: PercentOutput, speed);
 			}
 		}
 
-	void DriveSideways(double x, double t)
+	void Strafe(std::string side)
 	{
-		lf -> Set(ControlMode::PercentOutput, -x);
-		lr -> Set(ControlMode::PercentOutput, x);
-		rf -> Set(ControlMode::PercentOutput, -x);
-		rr -> Set(ControlMode::PercentOutput, x);
-		Wait(t);
-		lf -> Set(ControlMode::PercentOutput, 0);
-		lr -> Set(ControlMode::PercentOutput, 0);
-		rf -> Set(ControlMode::PercentOutput, 0);
-		rr -> Set(ControlMode::PercentOutput, 0);
+		if(side == "left"){
+			lf ->Set(ControlMode :: PercentOutput, autonSpeed);
+			lr ->Set(ControlMode :: PercentOutput, -autonSpeed);
+			rf ->Set(ControlMode :: PercentOutput, autonSpeed);
+			rr ->Set(ControlMode :: PercentOutput, -autonSpeed);
+		}
+		else if(side == "right"){
+			lf ->Set(ControlMode :: PercentOutput, -autonSpeed);
+			lr ->Set(ControlMode :: PercentOutput, autonSpeed);
+			rf ->Set(ControlMode :: PercentOutput, -autonSpeed);
+			rr ->Set(ControlMode :: PercentOutput, autonSpeed);
+		}
 	}
 
 	void Lifter(int x)
@@ -284,15 +306,9 @@ public:
 
 		}
 
-		else if(x == 1)
-		{
 
-		}
 
-		else
-		{
-			sLift->Set(0);
-		}
+
 	}
 bool turnComplete = false;
 
@@ -518,7 +534,7 @@ bool turnComplete = false;
 		}
 		else if(state == 2){
 			LiftComplete = true;
-			sLift->Set(-.2);
+
 			DriveStraight(autonSpeed);
 
 		}
@@ -544,64 +560,53 @@ bool turnComplete = false;
 		ThirdAction = 150;
 		FourthAction = 200;
 		SixthAction = 250;
-
-
 		if(timer < FirstAction){
-			state = 1;
-			timer = FirstAction;
+			state = 1;//Lifting from start to FirstAction
+
 		}
-		if(timer > FirstAction && timer < SecondAction && state == 1){
-			state = 2;
+		if(timer > FirstAction && timer < SecondAction){
+			state = 2;//Strafing right from First to second action
 		}
-		if(timer > SecondAction && timer < ThirdAction && state == 2) {
-			state = 3;
+		if(timer == SecondAction) {
+			state = 3;//stopping at second action
+		}
+		if(timer < SecondAction && timer > ThirdAction){
+			state = 4;//Driving from second to third action
 		}
 		if(timer == ThirdAction){
-			state = 4;
+			state = 5;//Stopping at third action
 		}
-		if(timer > ThirdAction && timer < FourthAction && state == 3){
-			state = 5;
+		if(timer > ThirdAction && timer < FourthAction && !turnComplete){
+			state = 6;//Turning between third and fourth action
 		}
-		if(timer > FourthAction && timer < FifthAction && state == 4){
-			state = 6;
-		}
-		if(timer == FifthAction) {
-			state = 7;
-		}
-		if(timer < SixthAction && state == 7){
-			state = 8;
-		}
-		if(timer == SixthAction){
-			state = 9;
+		if(timer == FourthAction && turnComplete) {
+			state = 7;//Stopping and dropping the cube at fourth action
+			turnComplete = false;
 		}
 
 		if(state == 1){
-			Lifter(1);
+			Lifter(0);
 		}
 		else if(state == 2){
-			Turn(-90);
+			Strafe("left");
 		}
 		else if(state == 3){
-			DriveStraight(autonSpeed);
-		}
-		else if(state == 4){
 			Stop();
 		}
+		else if(state == 4){
+			DriveStraight(autonSpeed);
+		}
 		else if(state == 5){
-			Turn(90);
+			Stop();
 		}
 		else if(state == 6){
-			DriveStraight(autonSpeed);
+			Turn(90);
 		}
 		else if(state == 7){
 			Stop();
-		}
-		else if(state == 8){
-			Turn(90);
-		}
-		else if(state == 9){
 			Drop();
 		}
+
 
 	}
 	void LeftThree()
@@ -687,10 +692,10 @@ bool turnComplete = false;
 		}
 	}
 	void LeftScale(){
-		FirstAction = 300;
-		SecondAction = 350;
-		ThirdAction = 400;
-		FourthAction = 450;
+		FirstAction = 80;
+		SecondAction = 260;
+		ThirdAction = 310;
+		FourthAction = 320;
 
 		if(timer < FirstAction){
 			state = 1;
@@ -710,7 +715,7 @@ bool turnComplete = false;
 		}
 
 		if(state == 1){
-			Lifter(1);
+			Lifter(0);
 		}
 		else if(state == 2){
 			DriveStraight(autonSpeed);
@@ -813,65 +818,63 @@ bool turnComplete = false;
 	void RightTwo()
 	{
 		FirstAction = 50;
-		SecondAction = 100;
-		ThirdAction = 150;
-		FourthAction = 200;
-		SixthAction = 250;
+		SecondAction = 200;
+		ThirdAction = 250;
+		FourthAction = 300;
+		SixthAction = 350;
 		if(timer < FirstAction){
-			state = 1;
+			state = 1;//Lifting from start to FirstAction
 
 		}
-		if(timer > FirstAction && timer < SecondAction && state == 1){
-			state = 2;
+		if(timer > FirstAction && timer < SecondAction){
+			state = 2;//Strafing right from First to second action
 		}
-		if(timer > SecondAction && timer < ThirdAction && state == 2) {
-			state = 3;
+		if(timer == SecondAction) {
+			state = 3;//stopping at second action
+		}
+		if(timer > SecondAction && timer < ThirdAction){
+			state = 4;//Driving from second to third action
 		}
 		if(timer == ThirdAction){
-			state = 4;
+			state = 5;//Stopping at third action
 		}
-		if(timer > ThirdAction && timer < FourthAction && state == 3){
-			state = 5;
+		if(timer > ThirdAction && timer < FourthAction && !turnComplete){
+			state = 6;//Turning between third and fourth action
 		}
-		if(timer > FourthAction && timer < FifthAction && state == 4){
-			state = 6;
-		}
-		if(timer == FifthAction) {
-			state = 7;
-		}
-		if(timer < SixthAction && state == 7){
-			state = 8;
-		}
-		if(timer == SixthAction){
-			state = 9;
+		if(timer == FourthAction && turnComplete) {
+			state = 7;//Stopping and dropping the cube at fourth action
+			turnComplete = false;
 		}
 
 		if(state == 1){
-			Lifter(1);
+			Lifter(0);
+			std::cout<<"lifting"<<std::endl;
 		}
 		else if(state == 2){
-			Turn(90);
+			Strafe("right");
+			std::cout<<"strafing"<<std::endl;
 		}
 		else if(state == 3){
-			DriveStraight(autonSpeed);
+			Stop();
+			std::cout<<"stop"<<std::endl;
 		}
 		else if(state == 4){
-			Stop();
+			DriveStraight(autonSpeed);
+			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 5){
-			Turn(-90);
+			Stop();
+			std::cout<<"stop"<<std::endl;
 		}
 		else if(state == 6){
-			DriveStraight(autonSpeed);
+			Turn(-90);
+			std::cout<<"turning"<<std::endl;
 		}
 		else if(state == 7){
 			Stop();
-		}
-		else if(state == 8){
-			Turn(-90);
-		}
-		else if(state == 9){
+			std::cout<<"stop"<<std::endl;
 			Drop();
+			std::cout<<"drop"<<std::endl;
 		}
 	}
 	void RightThree()
@@ -925,10 +928,10 @@ bool turnComplete = false;
 		}
 	}
 	void RightScale(){
-		FirstAction = 300;
-		SecondAction = 350;
-		ThirdAction = 400;
-		FourthAction = 450;
+		FirstAction = 80;
+		SecondAction = 260;
+		ThirdAction = 310;
+		FourthAction = 320;
 
 		if(timer < FirstAction){
 			state = 1;
@@ -1279,7 +1282,9 @@ bool turnComplete = false;
 		frc::SmartDashboard::PutNumber("State", state);
 		frc::SmartDashboard::PutNumber("Right Diff", RightDifference);
 		frc::SmartDashboard::PutString("gameData", gameData);
-
+		if(LiftComplete == true){
+			sLift->Set(-0.2);
+		}
 		if(gameData.length() > 0){
 			if(robotPos == 0){
 				AutonLine();
@@ -1307,6 +1312,7 @@ bool turnComplete = false;
 			}
 			else if(gameData[0] == 'R' && robotPos == 2){
 				RightTwo();
+				std::cout << "Center Auton - Right Switch"<<std::endl;
 			}
 			else{}
 
@@ -1360,7 +1366,7 @@ bool turnComplete = false;
 	void TestPeriodic()
 	{
 		//if(js1->GetRawButton(1){TestAll();})
-		testWinch();
+		//testWinch();
 
 	}
 
