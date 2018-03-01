@@ -42,7 +42,7 @@ class Robot : public frc::IterativeRobot
 	WPI_TalonSRX *rf = new WPI_TalonSRX(1); //right front
 	WPI_TalonSRX *lr = new WPI_TalonSRX(2); //left rear
 	WPI_TalonSRX *rr = new WPI_TalonSRX(3); //right rear
-	WPI_TalonSRX *sLift = new WPI_TalonSRX(4); //Skylift
+	WPI_TalonSRX *sLift = new WPI_TalonSRX(4); //Sky lift
 	WPI_TalonSRX *cWinch = new WPI_TalonSRX(5); //climb winch
 	WPI_TalonSRX *cExtend = new WPI_TalonSRX(6); //climb extend
 	WPI_TalonSRX *pWheelL = new WPI_TalonSRX(7); //pickup wheels left
@@ -168,21 +168,25 @@ public:
     	lr->ConfigNominalOutputForward(0,0);
     	rf->ConfigNominalOutputForward(0,0);
     	rr->ConfigNominalOutputForward(0,0);
+    	sLift->ConfigNominalOutputForward(0,0);
 
     	lf->ConfigNominalOutputReverse(0,0);
     	lr->ConfigNominalOutputReverse(0,0);
     	rf->ConfigNominalOutputReverse(0,0);
     	rr->ConfigNominalOutputReverse(0,0);
+    	sLift->ConfigNominalOutputReverse(0,0);
 
     	lf->ConfigPeakOutputForward(1,0);
     	lr->ConfigPeakOutputForward(1,0);
     	rf->ConfigPeakOutputForward(1,0);
     	rr->ConfigPeakOutputForward(1,0);
+    	sLift->ConfigPeakOutputForward(1,0);
 
     	lf->ConfigPeakOutputReverse(-1,0);
     	lr->ConfigPeakOutputReverse(-1,0);
     	rf->ConfigPeakOutputReverse(-1,0);
     	rr->ConfigPeakOutputReverse(-1,0);
+    	sLift->ConfigPeakOutputReverse(-1,0);
 	}
 
 
@@ -273,7 +277,8 @@ public:
 		}
 
 		else{
-			lf -> Set(ControlMode :: PercentOutput, speed);
+			rf -> Set(ControlMode :: PercentOutput, speed);
+			lf -> Set(ControlMode :: PercentOutput, -speed);
 			lr -> Set(ControlMode :: PercentOutput, -speed);
 			rr -> Set(ControlMode :: PercentOutput, speed);
 			}
@@ -298,14 +303,15 @@ public:
 	void Lifter(int x)
 	{
 		//raise or lower the lifting device
-		if (x == 0)
+		if (x == 1)
 		{
-			if(LiftComplete == false){
 			sLift->Set(-1);
-			}
+
 
 		}
-
+		else if(x==0){
+			sLift->Set(-.2);
+		}
 
 
 
@@ -530,11 +536,10 @@ bool turnComplete = false;
 		}
 
 		if(state == 1){
-			Lifter(0);
+			Lifter(1);
 		}
 		else if(state == 2){
-			LiftComplete = true;
-
+			Lifter(0);
 			DriveStraight(autonSpeed);
 
 		}
@@ -555,13 +560,12 @@ bool turnComplete = false;
 	}
 	void LeftTwo()
 	{
-		FirstAction = 50;
-		SecondAction = 100;
-		ThirdAction = 150;
-		FourthAction = 200;
-		SixthAction = 250;
+		FirstAction = 30;
+		SecondAction = 180;
+		ThirdAction = 250;
+
 		if(timer < FirstAction){
-			state = 1;//Lifting from start to FirstAction
+			state = 1;//Lifting and driving from start to FirstAction
 
 		}
 		if(timer > FirstAction && timer < SecondAction){
@@ -570,43 +574,39 @@ bool turnComplete = false;
 		if(timer == SecondAction) {
 			state = 3;//stopping at second action
 		}
-		if(timer < SecondAction && timer > ThirdAction){
+		if(timer > SecondAction && timer < ThirdAction){
 			state = 4;//Driving from second to third action
 		}
 		if(timer == ThirdAction){
-			state = 5;//Stopping at third action
-		}
-		if(timer > ThirdAction && timer < FourthAction && !turnComplete){
-			state = 6;//Turning between third and fourth action
-		}
-		if(timer == FourthAction && turnComplete) {
-			state = 7;//Stopping and dropping the cube at fourth action
-			turnComplete = false;
+			state = 5;//Stopping and dropping at third action
 		}
 
+
+
 		if(state == 1){
-			Lifter(0);
+			Lifter(1);
+			DriveStraight(autonSpeed);
+			std::cout<<"lifting and driving"<<std::endl;
 		}
 		else if(state == 2){
+			Lifter(0);
 			Strafe("left");
+			std::cout<<"strafing"<<std::endl;
 		}
 		else if(state == 3){
 			Stop();
+			std::cout<<"stop"<<std::endl;
 		}
 		else if(state == 4){
 			DriveStraight(autonSpeed);
+			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 5){
 			Stop();
-		}
-		else if(state == 6){
-			Turn(90);
-		}
-		else if(state == 7){
-			Stop();
+			std::cout<<"stop"<<std::endl;
 			Drop();
+			std::cout<<"drop"<<std::endl;
 		}
-
 
 	}
 	void LeftThree()
@@ -664,7 +664,7 @@ bool turnComplete = false;
 		}
 		else if (state == 5){
 			turnComplete = false;
-			Lifter(0);
+			Lifter(1);
 		}
 		else if (state == 6){
 			DriveStraight(autonSpeed);
@@ -715,7 +715,7 @@ bool turnComplete = false;
 		}
 
 		if(state == 1){
-			Lifter(0);
+			Lifter(1);
 		}
 		else if(state == 2){
 			DriveStraight(autonSpeed);
@@ -788,7 +788,7 @@ bool turnComplete = false;
 		}
 		else if (state == 5){
 			turnComplete = false;
-			Lifter(0);
+			Lifter(1);
 		}
 		else if (state == 6){
 			DriveStraight(autonSpeed);
@@ -817,13 +817,12 @@ bool turnComplete = false;
 	}
 	void RightTwo()
 	{
-		FirstAction = 50;
-		SecondAction = 200;
+		FirstAction = 30;
+		SecondAction = 180;
 		ThirdAction = 250;
-		FourthAction = 300;
-		SixthAction = 350;
+
 		if(timer < FirstAction){
-			state = 1;//Lifting from start to FirstAction
+			state = 1;//Lifting and driving from start to FirstAction
 
 		}
 		if(timer > FirstAction && timer < SecondAction){
@@ -836,21 +835,18 @@ bool turnComplete = false;
 			state = 4;//Driving from second to third action
 		}
 		if(timer == ThirdAction){
-			state = 5;//Stopping at third action
-		}
-		if(timer > ThirdAction && timer < FourthAction && !turnComplete){
-			state = 6;//Turning between third and fourth action
-		}
-		if(timer == FourthAction && turnComplete) {
-			state = 7;//Stopping and dropping the cube at fourth action
-			turnComplete = false;
+			state = 5;//Stopping and dropping at third action
 		}
 
+
+
 		if(state == 1){
-			Lifter(0);
-			std::cout<<"lifting"<<std::endl;
+			Lifter(1);
+			DriveStraight(autonSpeed);
+			std::cout<<"lifting and driving"<<std::endl;
 		}
 		else if(state == 2){
+			Lifter(0);
 			Strafe("right");
 			std::cout<<"strafing"<<std::endl;
 		}
@@ -865,17 +861,10 @@ bool turnComplete = false;
 		else if(state == 5){
 			Stop();
 			std::cout<<"stop"<<std::endl;
-		}
-		else if(state == 6){
-			Turn(-90);
-			std::cout<<"turning"<<std::endl;
-		}
-		else if(state == 7){
-			Stop();
-			std::cout<<"stop"<<std::endl;
 			Drop();
 			std::cout<<"drop"<<std::endl;
 		}
+
 	}
 	void RightThree()
 	{
@@ -904,11 +893,10 @@ bool turnComplete = false;
 		}
 
 		if(state == 1){
-			Lifter(0);
+			Lifter(1);
 		}
 		else if(state == 2){
-			LiftComplete = true;
-			sLift->Set(-.2);
+			Lifter(0);
 			DriveStraight(autonSpeed);
 
 		}
@@ -1282,9 +1270,7 @@ bool turnComplete = false;
 		frc::SmartDashboard::PutNumber("State", state);
 		frc::SmartDashboard::PutNumber("Right Diff", RightDifference);
 		frc::SmartDashboard::PutString("gameData", gameData);
-		if(LiftComplete == true){
-			sLift->Set(-0.2);
-		}
+
 		if(gameData.length() > 0){
 			if(robotPos == 0){
 				AutonLine();
