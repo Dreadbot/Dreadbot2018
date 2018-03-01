@@ -96,6 +96,7 @@ class Robot : public frc::IterativeRobot
 //	bool autonIsLeftSwitch = false;
 //	bool autonIsBlueAlliance = false;
 	double robotPos;
+	bool encode;
 	int timer;
 	int state;
 	std::string gameData;
@@ -112,6 +113,7 @@ class Robot : public frc::IterativeRobot
 	double RightDifference = 0;
 	bool LiftComplete;
 	frc::SendableChooser<int> posChooser;
+	frc::SendableChooser<bool> encodeChooser;
 	int oneSecond = 50;
 	int halfSecond = 25;
 	int twoSeconds = 100;
@@ -162,8 +164,10 @@ public:
     	posChooser.AddObject("Left", 1);
     	posChooser.AddObject("Center", 2);
     	posChooser.AddObject("Right", 3);
+    	encodeChooser.AddDefault("Yes", true);
+    	encodeChooser.AddObject("No", false);
     	frc::SmartDashboard::PutData("robotPos", &posChooser);
-
+    	frc::SmartDashboard::PutData("Using Encoders?", &encodeChooser);
     	lf->ConfigNominalOutputForward(0,0);
     	lr->ConfigNominalOutputForward(0,0);
     	rf->ConfigNominalOutputForward(0,0);
@@ -1151,7 +1155,7 @@ bool turnComplete = false;
 		LiftComplete = false;
 		timer = 0;
 		robotPos = posChooser.GetSelected();
-
+		encode = encodeChooser.GetSelected();
 		gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
 		//m_autoSelected = m_chooser.GetSelected();
 		// m_autoSelected = SmartDashboard::GetString(
@@ -1270,7 +1274,8 @@ bool turnComplete = false;
 		frc::SmartDashboard::PutNumber("State", state);
 		frc::SmartDashboard::PutNumber("Right Diff", RightDifference);
 		frc::SmartDashboard::PutString("gameData", gameData);
-
+if(encode){}
+else if(!encode){
 		if(gameData.length() > 0){
 			if(robotPos == 0){
 				AutonLine();
@@ -1306,6 +1311,8 @@ bool turnComplete = false;
 
 		}
 	}
+
+}
 
 
 	void TeleopInit()
