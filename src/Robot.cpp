@@ -6,7 +6,7 @@
 /*----------------------------------------------------------------------------*/
 
 //Dreadbot VIII - FIRST Power Up
-//Authors: Christian Vaughan, Ethan Leonello, Clara Gauthier, Anna Robelen, Robert Lindskov, Justin McIntosh,
+//Authors: Christian Vaughan, Ethan Leonello, Clara Gauthier, Anna Robelen, Robert Lindskov, Justin McIntosh, Kyle Roleson, Grant Reamy
 
 #include <iostream>
 #include <string>
@@ -23,7 +23,6 @@
 #include <ctre/Phoenix.h>
 
 #include <AHRS.h>
-
 class Robot : public frc::IterativeRobot
 {
 
@@ -97,7 +96,7 @@ class Robot : public frc::IterativeRobot
 //	bool autonIsBlueAlliance = false;
 	double robotPos;
 	bool encode;
-	int timer;
+	double timer;
 	int state;
 	std::string gameData;
 	int currentAngle;
@@ -114,12 +113,13 @@ class Robot : public frc::IterativeRobot
 	bool LiftComplete;
 	frc::SendableChooser<int> posChooser;
 	frc::SendableChooser<bool> encodeChooser;
-	int oneSecond = 50;
-	int halfSecond = 25;
-	int twoSeconds = 100;
-	double timeCon = 50/78;// The robot drives about 78 inches each second at 0.5 speed.
-	double strafeCon = 50/21;
-	double liftCon = 50/40;
+	double oneSecond = 50;
+	double halfSecond = 25;
+	double twoSeconds = 100;
+	double timeCon = 50.0/78.0;// The robot drives about 78 inches each second at 0.5 speed.
+	double strafeCon = 50.0/31.5;//The robot strafes about 21 inches each second
+	double liftCon = 50.0/40.0;//The robot lifts about 40 inches each second
+	bool done = false;
 //------------------------------------------------------
 //Vision Variables
 //------------------------------------------------------
@@ -248,7 +248,6 @@ public:
 		rf -> Set(ControlMode :: PercentOutput, speed);
 		rr -> Set(ControlMode :: PercentOutput, speed);
 	}
-
 	void DriveForward(double x, double t)
 	{
 		lf -> Set(ControlMode::PercentOutput, x);
@@ -263,7 +262,6 @@ public:
 		x = 0;
 		t = 0;
 	}
-	
 	void DriveStraight(double speed){
 		float slop = 5;
 
@@ -288,7 +286,58 @@ public:
 			rr -> Set(ControlMode :: PercentOutput, speed);
 			}
 		}
+	void StrafeStraight(std::string side)
+		{
+			double slop = 5;
+			double setAngle;
+			double rotSpeed = 0;
+			double thisAuton = 0.8;
+			double currentAngle = gyro->GetYaw();
 
+			if(side == "right")
+			{
+				if(done == false)
+				{
+					setAngle = currentAngle;
+					done = true;
+				}
+
+				float angDiff = setAngle - currentAngle;
+
+				if(angDiff < -slop)
+				{
+					rotSpeed = -thisAuton/3;
+				}
+
+				if(angDiff > slop)
+				{
+					rotSpeed = thisAuton/3;
+				}
+			}
+			if(side == "left")
+			{
+				if(done == false)
+				{
+					setAngle = currentAngle;
+					done = true;
+				}
+
+				float angDiff = setAngle - currentAngle;
+
+				thisAuton = -thisAuton;
+
+				if(angDiff < -slop)
+				{
+					rotSpeed = thisAuton/3;
+				}
+
+				if(angDiff > slop)
+				{
+					rotSpeed = -thisAuton/3;
+				}
+			}
+			AutonMecDrive(thisAuton, 0, rotSpeed);
+		}
 	void Strafe(std::string side)
 	{
 		if(side == "left"){
@@ -304,7 +353,6 @@ public:
 			rr ->Set(ControlMode :: PercentOutput, autonSpeed);
 		}
 	}
-
 	void Lifter(int x)
 	{
 		//raise or lower the lifting device
@@ -321,7 +369,7 @@ public:
 
 
 	}
-bool turnComplete = false;
+	bool turnComplete = false;
 
 
 	void Turn(int wantAngle)
@@ -378,12 +426,12 @@ bool turnComplete = false;
 		{
 			if (extend > 0)
 			{
-				cExtend->Set(0.5);
+				cExtend->Set(1);
 			}
 
 			else if (extend < 0)
 			{
-				cExtend->Set(-0.5);
+				cExtend->Set(-1);
 			}
 
 			else if (extend == 0)
@@ -417,20 +465,21 @@ bool turnComplete = false;
 		}
 	}
 	void winch()
-	{
-		if(js1->GetRawButton(1))
 		{
-			cWinch->Set(1);
+			if(js1->GetRawButton(1))
+			{
+				cWinch->Set(1);
+			}
+			else if(js1->GetRawButton(10))
+			{
+				cWinch->Set(-1);
+			}
+			else
+			{
+				cWinch->Set(0);
+			}
 		}
-		else if(js1->GetRawButton(10))
-		{
-			cWinch->Set(-1);
-		}
-		else
-		{
-			cWinch->Set(0);
-		}
-	}
+
 	void teleopSkyLift()
 	{
 		bool goingUp = js1->GetRawButton(skyLiftUp);
@@ -472,7 +521,10 @@ bool turnComplete = false;
 		armSol->Set(true);
 		clawSol->Set(true);
 		}
-
+	void autonThrow(int x){
+		pWheelL->Set(x);
+		pWheelR->Set(x);
+	}
 
 	void teleopGrabToggle()
 	{
@@ -516,58 +568,49 @@ bool turnComplete = false;
 	void LeftOne()
 
 	{
-		FirstAction = 40;
-		SecondAction = 160;
-		ThirdAction = 210;
-		FourthAction = 220;
+		FirstAction = (140.0*timeCon);//210
+		SecondAction = (72.0*liftCon)+FirstAction;//240
 
 		if(timer < FirstAction){
-			state = 1; //Lifting, from start to first action
+			state = 1;//Driving from start to First action
+
 		}
-		if(timer < SecondAction && state == 1 && timer > FirstAction){
-			state = 2; //Driving, between first and second action
+		if(timer >= FirstAction && state == 1){
+			state = 2;//stopping at first action
 		}
-		if(timer == SecondAction && state == 2){
-			state = 3;//Stopping at second action
+		if(timer > FirstAction && timer < SecondAction){
+			state = 3;//lifting between first and second action
 		}
-		if(state == 3){
-			state = 4; //Turning Left, setting timer to third action when done
+		if(timer > SecondAction && state == 3 && !turnComplete){
+			state = 4;//turning right 90 degrees
 		}
-		if(state == 4 && turnComplete){
-			state = 5; //Driving, between third and fourth action
-		}
-		if(state == 5 && timer == FourthAction){
-			state = 6;// Stopping, at fourth action
+		if(turnComplete && state == 4){
+			state = 5; //Stopping the motors and drop the cube.
 		}
 
 		if(state == 1){
-			Lifter(1);
+			DriveStraight(autonSpeed);
 		}
 		else if(state == 2){
-			Lifter(0);
-			DriveStraight(autonSpeed);
-
-		}
-		else if(state == 3){
 			Stop();
 		}
+		else if(state == 3){
+			Lifter(1);
+		}
 		else if(state == 4){
+			Lifter(0);
 			Turn(90);
-			timer = ThirdAction;
 		}
 		else if(state == 5){
-			DriveStraight(autonSpeed);
-		}
-		else if(state == 6){
 			Stop();
 			Drop();
 		}
 	}
 	void LeftTwo()
 	{
-		FirstAction = (36*timeCon);//originally 30
-		SecondAction = (66*strafeCon) + FirstAction;//originally 180
-		ThirdAction = (99*timeCon) + SecondAction;//originally 250
+		FirstAction = (36.0*timeCon);//originally 30
+		SecondAction = (66.0*strafeCon) + FirstAction;//originally 180
+		ThirdAction = (99.0*timeCon) + SecondAction;//originally 250
 
 		if(timer < FirstAction){
 			state = 1;//Lifting and driving from start to FirstAction
@@ -582,7 +625,7 @@ bool turnComplete = false;
 		if(timer > SecondAction && timer < ThirdAction){
 			state = 4;//Driving from second to third action
 		}
-		if(timer == ThirdAction){
+		if(timer > ThirdAction){
 			state = 5;//Stopping and dropping at third action
 		}
 
@@ -595,7 +638,7 @@ bool turnComplete = false;
 		}
 		else if(state == 2){
 			Lifter(0);
-			Strafe("left");
+			StrafeStraight("left");
 			std::cout<<"strafing"<<std::endl;
 		}
 		else if(state == 3){
@@ -618,27 +661,27 @@ bool turnComplete = false;
 	{
 		int FirstAction = (228.375*timeCon);//184
 		int SecondAction = (182.75*timeCon)+FirstAction;//284
-		int ThirdAction = (72*liftCon)+SecondAction;//410
+		int ThirdAction = (72.0*liftCon)+SecondAction;//410
 		int FourthAction = (18.805*timeCon)+ThirdAction;//460
 		if(timer < FirstAction){
 			state = 1;//Drive between start and first action
 		}
-		if(timer == FirstAction && state == 1){
+		if(timer >= FirstAction && state == 1){
 			state = 2;//Stopping at first action
 		}
 		if(timer > FirstAction && state == 2 && !turnComplete){
 			state = 3;//Turn left 90 degrees
 		}
 		if(state == 3 && turnComplete){
-			state = 4;//Stop and set timer to second action
+			state = 4;//Stop and set timer to first action
 		}
-		if(timer > FirstAction && timer < SecondAction){
+		if(timer > FirstAction && timer < SecondAction && state == 4){
 			state = 5;//Driving between First and Second action
 		}
-		if(timer == SecondAction){
+		if(timer >= SecondAction && state == 5){
 			state = 6;//Stopping at second action
 		}
-		if(timer > SecondAction && timer < ThirdAction){
+		if(timer > SecondAction && timer < ThirdAction && state == 6){
 			state = 7;//Lifting from second to third action
 		}
 		if(state == 7 && timer > ThirdAction && !turnComplete){
@@ -650,7 +693,7 @@ bool turnComplete = false;
 		if(timer > ThirdAction && timer < FourthAction && state == 9){
 			state = 10;//Driving forward between third and fourth action
 			}
-		if(timer == FourthAction && state == 10){
+		if(timer > FourthAction && state == 10){
 			state = 11;//Stopping and dropping at fourth action
 			}
 
@@ -666,7 +709,7 @@ bool turnComplete = false;
 		}
 		else if (state == 4){
 			Stop();
-			timer = SecondAction;
+			timer = FirstAction;
 		}
 		else if (state == 5){
 			turnComplete = false;
@@ -685,7 +728,7 @@ bool turnComplete = false;
 
 		else if(state == 9){
 			Stop();
-			timer = FourthAction;
+			timer = ThirdAction;
 			turnComplete = false;
 		}
 		else if(state == 10){
@@ -697,15 +740,16 @@ bool turnComplete = false;
 		}
 
 	}
-	void LeftScale(){
-		FirstAction = 210;
-		SecondAction = 240;
+	void LeftScale()
+{
+		FirstAction = (299.65*timeCon);//210
+		SecondAction = (72.0*liftCon)+FirstAction;//240
 
 		if(timer < FirstAction){
 			state = 1;//Driving from start to First action
 
 		}
-		if(timer == FirstAction){
+		if(timer > FirstAction && state == 1){
 			state = 2;//stopping at first action
 		}
 		if(timer > FirstAction && timer < SecondAction){
@@ -740,27 +784,27 @@ bool turnComplete = false;
 	{
 		int FirstAction = (228.375*timeCon);//184
 		int SecondAction = (182.75*timeCon)+FirstAction;//284
-		int ThirdAction = (72*liftCon)+SecondAction;//410
+		int ThirdAction = (72.0*liftCon)+SecondAction;//410
 		int FourthAction = (18.805*timeCon)+ThirdAction;//460
 		if(timer < FirstAction){
 			state = 1;//Drive between start and first action
 		}
-		if(timer == FirstAction && state == 1){
+		if(timer >= FirstAction && state == 1){
 			state = 2;//Stopping at first action
 		}
 		if(timer > FirstAction && state == 2 && !turnComplete){
 			state = 3;//Turn right 90 degrees
 		}
 		if(state == 3 && turnComplete){
-			state = 4;//Stop and set timer to second action
+			state = 4;//Stop and set timer to first action
 		}
-		if(timer > FirstAction && timer < SecondAction){
+		if(timer > FirstAction && timer < SecondAction && turnComplete){
 			state = 5;//Driving between First and Second action
 		}
-		if(timer == SecondAction){
+		if(timer >= SecondAction && state == 5){
 			state = 6;//Stopping at second action
 		}
-		if(timer > SecondAction && timer < ThirdAction){
+		if(timer > SecondAction && timer < ThirdAction && state == 6){
 			state = 7;//Lifting from second to third action
 		}
 		if(state == 7 && timer > ThirdAction && !turnComplete){
@@ -772,7 +816,7 @@ bool turnComplete = false;
 		if(timer > ThirdAction && timer < FourthAction && state == 9){
 			state = 10;//Driving forward between third and fourth action
 			}
-		if(timer == FourthAction && state == 10){
+		if(timer > FourthAction && state == 10){
 			state = 11;//Stopping and dropping at fourth action
 			}
 
@@ -788,7 +832,7 @@ bool turnComplete = false;
 		}
 		else if (state == 4){
 			Stop();
-			timer = SecondAction;
+			timer = FirstAction;
 		}
 		else if (state == 5){
 			turnComplete = false;
@@ -807,7 +851,7 @@ bool turnComplete = false;
 
 		else if(state == 9){
 			Stop();
-			timer = FourthAction;
+			timer = ThirdAction;
 			turnComplete = false;
 		}
 		else if(state == 10){
@@ -821,9 +865,13 @@ bool turnComplete = false;
 	}
 	void RightTwo()
 	{
-		FirstAction = (36*timeCon);//30
-		SecondAction = (42*strafeCon)+FirstAction;//180
-		ThirdAction = (99*timeCon)+SecondAction;//250
+		FirstAction = (36.0*timeCon);//30
+		std::cout<<FirstAction<<std::endl;
+		SecondAction = (42.0*strafeCon)+FirstAction;//180
+		std::cout<<SecondAction<<std::endl;
+		ThirdAction = (99.0*timeCon)+SecondAction;//250
+		std::cout<<ThirdAction<<std::endl;
+		std::cout<<timer<<std::endl;
 
 		if(timer < FirstAction){
 			state = 1;//Lifting and driving from start to FirstAction
@@ -832,13 +880,13 @@ bool turnComplete = false;
 		if(timer > FirstAction && timer < SecondAction){
 			state = 2;//Strafing right from First to second action
 		}
-		if(timer == SecondAction) {
+		if(timer >= SecondAction && state == 2) {
 			state = 3;//stopping at second action
 		}
 		if(timer > SecondAction && timer < ThirdAction){
 			state = 4;//Driving from second to third action
 		}
-		if(timer == ThirdAction){
+		if(timer > ThirdAction){
 			state = 5;//Stopping and dropping at third action
 		}
 
@@ -851,7 +899,7 @@ bool turnComplete = false;
 		}
 		else if(state == 2){
 			Lifter(0);
-			Strafe("right");
+			StrafeStraight("right");
 			std::cout<<"strafing"<<std::endl;
 		}
 		else if(state == 3){
@@ -872,62 +920,12 @@ bool turnComplete = false;
 	}
 	void RightThree()
 	{
-		FirstAction = 40;
-		SecondAction = 160;
-		ThirdAction = 210;
-		FourthAction = 230;
-
-		if(timer < FirstAction){
-			state = 1; //Lifting, from start to first action
-		}
-		if(timer < SecondAction && state == 1 && timer > FirstAction){
-			state = 2; //Driving, between first and second action
-		}
-		if(timer == SecondAction && state == 2){
-			state = 3;//Stopping at second action
-		}
-		if(state == 3){
-			state = 4; //Turning Left, setting timer to third action when done
-		}
-		if(state == 4 && turnComplete){
-			state = 5; //Driving, between third and fourth action
-		}
-		if(state == 5 && timer == FourthAction){
-			state = 6;// Stopping, at fourth action
-		}
-
-		if(state == 1){
-			Lifter(1);
-		}
-		else if(state == 2){
-			Lifter(0);
-			DriveStraight(autonSpeed);
-
-		}
-		else if(state == 3){
-			Stop();
-		}
-		else if(state == 4){
-			Turn(-90);
-			timer = ThirdAction;
-		}
-		else if(state == 5){
-			DriveStraight(autonSpeed);
-		}
-		else if(state == 6){
-			Stop();
-			Drop();
-		}
-	}
-	void RightScale(){
-		FirstAction = 210;
-		SecondAction = 300;
-
+		FirstAction = (140.0*timeCon);//210
+		SecondAction = (72.0*liftCon)+FirstAction;//240
 		if(timer < FirstAction){
 			state = 1;//Driving from start to First action
-
 		}
-		if(timer == FirstAction){
+		if(timer >= FirstAction && state == 1){
 			state = 2;//stopping at first action
 		}
 		if(timer > FirstAction && timer < SecondAction){
@@ -939,7 +937,6 @@ bool turnComplete = false;
 		if(turnComplete && state == 4){
 			state = 5; //Stopping the motors and drop the cube.
 		}
-
 		if(state == 1){
 			DriveStraight(autonSpeed);
 		}
@@ -958,13 +955,88 @@ bool turnComplete = false;
 			Drop();
 		}
 	}
-	void AutonLine(){
+	void RightScale()
+{
+		std::cout<<"RightScale"<<std::endl;
+		FirstAction = (250*timeCon);//210
+		SecondAction = (72.0*liftCon)+FirstAction;//240
+		ThirdAction  = (12.0*timeCon)+SecondAction;
+		FourthAction = (18.0*timeCon)+ThirdAction;
+		std::cout<<state<<std::endl;
+		std::cout<<timer<<std::endl;
+		std::cout<<FirstAction<<std::endl;
+		std::cout<<SecondAction<<std::endl;
+		std::cout<<ThirdAction<<std::endl;
+
+		if(timer < FirstAction){
+			state = 1;//Driving from start to First action
+
+		}
+		if(timer >= FirstAction && state == 1){
+			state = 2;//stopping at first action
+
+		}
+		if(timer > FirstAction && timer < SecondAction){
+			state = 3;//lifting between first and second action
+
+		}
+		if(timer > SecondAction && state == 3 && !turnComplete){
+			state = 4;//turning left 90 degrees
+
+		}
+		if(turnComplete && state == 4){
+			state = 5; //Driving forward a little
+			timer = SecondAction;
+		}
+		if(timer > ThirdAction && timer < FourthAction && state == 5){
+			state = 6;
+
+			}
+		if(timer >= FourthAction && state == 6){
+			state = 7;
+
+		}
+		if(state == 1){
+			DriveStraight(autonSpeed);
+			std::cout<<"driving"<<std::endl;
+		}
+		else if(state == 2){
+			Stop();
+			std::cout<<"stop"<<std::endl;
+		}
+		else if(state == 3){
+			Lifter(1);
+			armSol->Set(true);
+			std::cout<<"lifting"<<std::endl;
+		}
+		else if(state == 4){
+			Lifter(0);
+			Turn(-90);
+			std::cout<<"turning"<<std::endl;
+		}
+		else if(state == 5){
+			DriveStraight(autonSpeed);
+
+			std::cout<<"driving"<<std::endl;
+		}
+		else if(state == 6){
+			autonThrow(-0.6);
+			DriveStraight(-autonSpeed);
+			std::cout<<"ejecting"<<std::endl;
+		}
+		else if(state == 7){
+			Stop();
+			std::cout<<"stopping"<<std::endl;
+		}
+	}
+	void AutonLine()
+	{
 		FirstAction = 100;
 
 		if(timer < FirstAction){
 			state = 1;
 		}
-		if(timer == FirstAction){
+		if(timer >= FirstAction && state == 1){
 			state = 2;
 		}
 
@@ -979,6 +1051,7 @@ bool turnComplete = false;
 	{
 		DriveForward(.5, 50);
 	}
+
 
 	void MecDrive(double xAxis, double yAxis, double rot) //homemade mecanum drive!
 	{
@@ -1039,6 +1112,31 @@ bool turnComplete = false;
 //		rr -> Set(ControlMode::PercentOutput, -rrSpeed*maxSpeed);
 //
 //	}
+	void AutonMecDrive(double xAxis, double yAxis, double rot)
+		{
+			double lfSpeed = -yAxis - xAxis - rot;
+			double rfSpeed = +yAxis - xAxis - rot;
+			double rrSpeed = +yAxis + xAxis - rot;
+			double lrSpeed = -yAxis + xAxis - rot;
+
+			if (fabs(lfSpeed) > 1)
+				lfSpeed = fabs(lfSpeed) / lfSpeed;
+
+			if (fabs(lrSpeed) > 1)
+				lrSpeed = fabs(lrSpeed) / lrSpeed;
+
+			if (fabs(rfSpeed) > 1)
+				rfSpeed = fabs(rfSpeed) / rfSpeed;
+
+			if (fabs(rrSpeed) > 1)
+				rrSpeed = fabs(rrSpeed) / rrSpeed;
+
+			lf -> Set(ControlMode::PercentOutput, lfSpeed);
+			lr -> Set(ControlMode::PercentOutput, lrSpeed);
+			rf -> Set(ControlMode::PercentOutput, rfSpeed);
+			rr -> Set(ControlMode::PercentOutput, rrSpeed);
+		}
+
 
 	void TestAll()
 	{
@@ -1151,6 +1249,7 @@ bool turnComplete = false;
 
 	void AutonomousInit() override
 	{
+		done = false;
 		LiftComplete = false;
 		timer = 0;
 		robotPos = posChooser.GetSelected();
@@ -1357,6 +1456,8 @@ bool turnComplete = false;
 		ActuateBirdPole(PoleExtend);
 	}
 
+
+
 	void TestPeriodic()
 	{
 		//if(js1->GetRawButton(1){TestAll();})
@@ -1373,3 +1474,5 @@ private:
 };
 
 START_ROBOT_CLASS(Robot)
+
+
