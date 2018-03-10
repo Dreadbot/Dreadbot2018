@@ -146,6 +146,8 @@ public:
 
 	void RobotInit()
 	{
+
+		CameraServer::GetInstance()->StartAutomaticCapture();
 		//m_chooser.AddDefault(kAutoNameDefault, kAutoNameDefault);
 		//m_chooser.AddObject(kAutoNameCustom, kAutoNameCustom);
 		//frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
@@ -486,13 +488,13 @@ public:
 		bool goingDown = js1->GetRawButton(skyLiftDown);
 
 		if(!goingUp && !goingDown){
-			sLift ->Set(-0.2);
+			sLift ->Set(0);
 		}
 		else if(goingUp){
 		 sLift ->Set(-1);
 		}
 		else if(goingDown){
-			sLift ->Set(.5);
+			sLift ->Set(.1);
 		}
 	}
 
