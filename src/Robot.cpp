@@ -43,6 +43,7 @@ class Robot : public frc::IterativeRobot
 	WPI_TalonSRX *rr = new WPI_TalonSRX(3); //right rear
 	WPI_TalonSRX *sLift = new WPI_TalonSRX(4); //Sky lift
 	WPI_TalonSRX *cWinch = new WPI_TalonSRX(5); //climb winch
+	WPI_TalonSRX *cWinch2 = new WPI_TalonSRX(9);// second climb winch
 	WPI_TalonSRX *cExtend = new WPI_TalonSRX(6); //climb extend
 	WPI_TalonSRX *pWheelL = new WPI_TalonSRX(7); //pickup wheels left
 	WPI_TalonSRX *pWheelR = new WPI_TalonSRX(8); //pickup wheels right
@@ -79,9 +80,9 @@ class Robot : public frc::IterativeRobot
 	int closeArms = 1;
 	int openArms = 4;
 	int pickupArmsUp = 5;
-	int throwCube = 6;
+	int throwCube = 8;//orig 6
 	int pickupArmsDown = 7;
-	int captureCube = 8;
+	int captureCube = 6;//orig 8
 
 
 //------------------------------------------------------
@@ -147,7 +148,7 @@ public:
 	void RobotInit()
 	{
 
-		//CameraServer::GetInstance()->StartAutomaticCapture();
+		CameraServer::GetInstance()->StartAutomaticCapture();
 		//m_chooser.AddDefault(kAutoNameDefault, kAutoNameDefault);
 		//m_chooser.AddObject(kAutoNameCustom, kAutoNameCustom);
 		//frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
@@ -470,15 +471,18 @@ public:
 		{
 			if(js1->GetRawButton(1))
 			{
-				cWinch->Set(1);
+				cWinch->Set(-1);
+				cWinch2->Set(-1);
 			}
 			else if(js1->GetRawButton(10))
 			{
-				cWinch->Set(-1);
+				cWinch->Set(1);
+				cWinch2->Set(1);
 			}
 			else
 			{
 				cWinch->Set(0);
+				cWinch2->Set(0);
 			}
 		}
 
@@ -611,8 +615,8 @@ public:
 	void LeftTwo()
 	{
 		FirstAction = (76.0*timeCon);//originally 30
-		SecondAction = (42.0*strafeCon) + FirstAction;//originally 180
-		ThirdAction = (140.0*timeCon) + SecondAction;//originally 250
+		SecondAction = (58.0*strafeCon) + FirstAction;//originally 180
+		ThirdAction = (141.0*timeCon) + SecondAction;//originally 250
 
 		if(timer < FirstAction){
 			state = 1;//Lifting and driving from start to FirstAction
@@ -745,7 +749,7 @@ public:
 	void LeftScale()
 {
 		std::cout<<"LeftScale"<<std::endl;
-		FirstAction = (230.0*timeCon);//210
+		FirstAction = (284.0*timeCon);//210
 		SecondAction = (90.0*liftCon)+FirstAction;//240
 		ThirdAction  = (30.0*timeCon)+SecondAction;
 		FourthAction = (18.0*timeCon)+ThirdAction;
@@ -809,13 +813,13 @@ public:
 			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 6){
-			autonThrow(1);
+			autonThrow(1.0);
 			DriveStraight(-autonSpeed);
 			std::cout<<"ejecting"<<std::endl;
 		}
 		else if(state == 7){
 			Stop();
-			autonThrow(0);
+			autonThrow(0.0);
 			std::cout<<"stopping"<<std::endl;
 		}
 	}
@@ -906,9 +910,9 @@ public:
 	{
 		FirstAction = (76.0*timeCon);//30
 		std::cout<<FirstAction<<std::endl;
-		SecondAction = (42.0*strafeCon)+FirstAction;//180
+		SecondAction = (58.0*strafeCon)+FirstAction;//180
 		std::cout<<SecondAction<<std::endl;
-		ThirdAction = (95.0*timeCon)+SecondAction;//250
+		ThirdAction = (141.0*timeCon)+SecondAction;//250
 		std::cout<<ThirdAction<<std::endl;
 		std::cout<<timer<<std::endl;
 
@@ -997,7 +1001,7 @@ public:
 	void RightScale()
 {
 		std::cout<<"RightScale"<<std::endl;
-		FirstAction = (230.0*timeCon);//210
+		FirstAction = (284.0*timeCon);//210
 		SecondAction = (90.0*liftCon)+FirstAction;//240
 		ThirdAction  = (30.0*timeCon)+SecondAction;
 		FourthAction = (18.0*timeCon)+ThirdAction;
@@ -1061,13 +1065,13 @@ public:
 			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 6){
-			autonThrow(1);
+			autonThrow(1.0);
 			DriveStraight(-autonSpeed);
 			std::cout<<"ejecting"<<std::endl;
 		}
 		else if(state == 7){
 			Stop();
-			autonThrow(0);
+			autonThrow(0.0);
 			std::cout<<"stopping"<<std::endl;
 		}
 	}
@@ -1199,11 +1203,13 @@ public:
 		rr -> Set(ControlMode::PercentOutput, 0);
 
 		cWinch -> Set(ControlMode::PercentOutput, .5);
+		cWinch2 -> Set(ControlMode::PercentOutput, .5);
 		Wait(twoSeconds);
 		cWinch -> Set(ControlMode::PercentOutput, -.5);
+		cWinch2 -> Set(ControlMode::PercentOutput, -.5);
 		Wait(twoSeconds);
 		cWinch -> Set(ControlMode::PercentOutput, 0);
-
+		cWinch2 ->Set(ControlMode::PercentOutput, 0);
 		sLift -> Set(ControlMode::PercentOutput, -1);
 		Wait(twoSeconds);
 		sLift -> Set(ControlMode::PercentOutput, .5);
@@ -1437,10 +1443,12 @@ public:
 					RightThree();
 				}
 				else if(gameData[0] == 'L' && robotPos == 3){
-					LeftThree();
+					//LeftThree();
+					AutonLine();
 				}
 				else if(gameData[0] == 'R' && robotPos == 1){
-					RightThree();
+					//RightOne();
+					AutonLine();
 				}
 				else if(gameData[0] == 'L' && robotPos == 2){
 					LeftTwo();
