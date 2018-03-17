@@ -57,18 +57,19 @@ class Robot : public frc::IterativeRobot
 	double driveSpeed = 0;
 
 
+
 //------------------------------------------------------
 //Controller Variables
 //------------------------------------------------------
 
 	//joystick variables
-	int joystickX=0;
+	int joystickX = 0;
 	int joystickY=1;
 	int climbTheScale = 1;
 	int joystickRot=2;
 
 	//controller 1 buttons
-		int retractBird = 2;
+	int retractBird = 2;
 	int extendBird = 3;
 	int deployBirdArm = 4;
 	int skyLiftDown = 5;
@@ -528,8 +529,8 @@ public:
 		clawSol->Set(true);
 		}
 	void autonThrow(double x){
-		pWheelL->Set(-x);
-		pWheelR->Set(x);
+		pWheelL->Set(x);
+		pWheelR->Set(-x);
 	}
 
 	void teleopGrabToggle()
@@ -813,7 +814,7 @@ public:
 			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 6){
-			autonThrow(1.0);
+			autonThrow(0.7);
 			DriveStraight(-autonSpeed);
 			std::cout<<"ejecting"<<std::endl;
 		}
@@ -1065,7 +1066,7 @@ public:
 			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 6){
-			autonThrow(1.0);
+			autonThrow(0.7);
 			DriveStraight(-autonSpeed);
 			std::cout<<"ejecting"<<std::endl;
 		}
@@ -1077,7 +1078,7 @@ public:
 	}
 	void AutonLine()
 	{
-		FirstAction = 100;
+		FirstAction = (266.0*timeCon);
 
 		if(timer < FirstAction){
 			state = 1;
@@ -1203,10 +1204,10 @@ public:
 		rr -> Set(ControlMode::PercentOutput, 0);
 
 		cWinch -> Set(ControlMode::PercentOutput, .5);
-		cWinch2 -> Set(ControlMode::PercentOutput, .5);
+		cWinch2 -> Set(ControlMode::PercentOutput, -.5);
 		Wait(twoSeconds);
 		cWinch -> Set(ControlMode::PercentOutput, -.5);
-		cWinch2 -> Set(ControlMode::PercentOutput, -.5);
+		cWinch2 -> Set(ControlMode::PercentOutput, .5);
 		Wait(twoSeconds);
 		cWinch -> Set(ControlMode::PercentOutput, 0);
 		cWinch2 ->Set(ControlMode::PercentOutput, 0);
