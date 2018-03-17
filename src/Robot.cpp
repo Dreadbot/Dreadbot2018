@@ -750,7 +750,7 @@ public:
 	void LeftScale()
 {
 		std::cout<<"LeftScale"<<std::endl;
-		FirstAction = (284.0*timeCon);//210
+		FirstAction = (290.0*timeCon);//210
 		SecondAction = (90.0*liftCon)+FirstAction;//240
 		ThirdAction  = (30.0*timeCon)+SecondAction;
 		FourthAction = (18.0*timeCon)+ThirdAction;
@@ -1002,7 +1002,7 @@ public:
 	void RightScale()
 {
 		std::cout<<"RightScale"<<std::endl;
-		FirstAction = (284.0*timeCon);//210
+		FirstAction = (290.0*timeCon);//210
 		SecondAction = (90.0*liftCon)+FirstAction;//240
 		ThirdAction  = (30.0*timeCon)+SecondAction;
 		FourthAction = (18.0*timeCon)+ThirdAction;
