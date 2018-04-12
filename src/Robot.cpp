@@ -824,21 +824,10 @@ public:
 			timer = FirstAction;
 		}
 		else if (state == 5){
-			if(halfFarScale == false)
-			{
-				turnComplete = false;
-				DriveStraight(autonSpeed);
-				Lifter(1);
-				armSol->Set(true);
-			}
-
-			else if(halfFarScale == true)
-			{
-				state = -1;
-				DriveStraight(autonSpeed);
-				if (timer > FirstAction + (182.75*timeCon/2))
-					Stop();
-			}
+			turnComplete = false;
+			DriveStraight(autonSpeed);
+			Lifter(1);
+			armSol->Set(true);
 		}
 		else if (state == 6){
 			Stop();
