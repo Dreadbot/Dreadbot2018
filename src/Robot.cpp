@@ -145,6 +145,7 @@ class Robot : public frc::IterativeRobot
 	int fourthRot;
 	int fifthRot;
 	int firstRotV2;
+	bool halfFarScale;
 
 //------------------------------------------------------
 //Vision Variables
@@ -823,10 +824,21 @@ public:
 			timer = FirstAction;
 		}
 		else if (state == 5){
-			turnComplete = false;
-			DriveStraight(autonSpeed);
-			Lifter(1);
-			armSol->Set(true);
+			if(halfFarScale == false)
+			{
+				turnComplete = false;
+				DriveStraight(autonSpeed);
+				Lifter(1);
+				armSol->Set(true);
+			}
+
+			else if(halfFarScale == true)
+			{
+				state = -1;
+				DriveStraight(autonSpeed);
+				if (timer > FirstAction + (182.75*timeCon/2))
+					Stop();
+			}
 		}
 		else if (state == 6){
 			Stop();
@@ -853,13 +865,83 @@ public:
 		}
 
 	}
+
+	void LeftThreeHalf()
+		{
+			encoders = true;
+			if(encoders){
+				currentRot = -1*(lr->GetSelectedSensorPosition(0));
+				currentLift = sLift->GetSelectedSensorPosition(0);
+				FirstDistance = 200.0;
+				SecondDistance = 160.0/2;
+				ThirdDistance = 30.0;
+				firstRot = (int)(((FirstDistance)/ipr)*1.0);
+				secondRot = (int)(((SecondDistance)/ipr)*1.0);
+				thirdRot = (int)(((ThirdDistance)/ipr)*1.0);
+				if(currentRot < firstRot && state == 0){
+					state = 1;
+				}
+				if(currentRot > firstRot && !turnComplete && state == 1){
+					Stop();
+					state = 3;
+				}
+				if(turnComplete && state == 3 && currentRot < secondRot){
+					state = 5;
+				}
+
+				if( state == 5 && currentRot >= secondRot){
+					state = 6;
+				}
+
+			}
+			else if(!encoders){
+				int FirstAction = (228.375*timeCon);//184
+				int SecondAction = (182.75*timeCon)+FirstAction;//284
+
+				if(timer < FirstAction){
+					state = 1;//Drive between start and first action
+				}
+				if(timer >= FirstAction && state == 1){
+					state = 2;//Stopping at first action
+				}
+				if(timer > FirstAction && state == 2 && !turnComplete){
+					state = 3;//Turn left 90 degrees
+				}
+				if(state == 3 && turnComplete){
+					state = 4;//Stop and set timer to first action
+				}
+				if(timer > FirstAction && timer < SecondAction && state == 4){
+					state = 5;//Driving between First and Second action
+				}
+			}
+
+			if (state == 1){
+				DriveStraight(autonSpeed);
+			}
+			else if (state == 2){
+				Stop();
+			}
+			else if (state == 3){
+				Turn(-90);
+			}
+			else if (state == 4){
+				Stop();
+				timer = FirstAction;
+			}
+			else if (state == 5){
+				DriveStraight(autonSpeed);
+			}
+			else if (state == 6)
+				Stop();
+		}
+
 	void LeftScale()
 	{
 		encoders = true;
 		if(encoders){
 			currentRot = -1*(lr->GetSelectedSensorPosition(0));
 			currentLift = sLift->GetSelectedSensorPosition(0);
-			FirstDistance = 140.0;
+			FirstDistance = 130.0;
 			FirstDistanceV2 = 150.0;
 			SecondDistance = 9.0;
 			ThirdDistance = 6.0;
@@ -971,121 +1053,201 @@ public:
 	void RightOne()
 	{
 		encoders = true;
-			if(encoders){
-				currentRot = -1*(lr->GetSelectedSensorPosition(0));
-				currentLift = sLift->GetSelectedSensorPosition(0);
-				FirstDistance = 200.0;
-				SecondDistance = 160.0;
-				ThirdDistance = 30.0;
-				firstRot = (int)(((FirstDistance)/ipr)*1.0);
-				secondRot = (int)(((SecondDistance)/ipr)*1.0);
-				thirdRot = (int)(((ThirdDistance)/ipr)*1.0);
+		if(encoders){
+			currentRot = -1*(lr->GetSelectedSensorPosition(0));
+			currentLift = sLift->GetSelectedSensorPosition(0);
+			FirstDistance = 200.0;
+			SecondDistance = 160.0;
+			ThirdDistance = 30.0;
+			firstRot = (int)(((FirstDistance)/ipr)*1.0);
+			secondRot = (int)(((SecondDistance)/ipr)*1.0);
+			thirdRot = (int)(((ThirdDistance)/ipr)*1.0);
 
-				if(currentRot < firstRot && state == 0){
-					state = 1;
-				}
-				if(currentRot > firstRot && !turnComplete && state == 1){
-					Stop();
-					state = 3;
-				}
-				if(turnComplete && state == 3 && currentRot < secondRot){
-					state = 5;
-				}
-
-				if( state == 5 && !turnComplete && currentRot >= secondRot){
-					state = 8;
-				}
-				if(turnComplete && state == 8){
-					state = 10;
-				}
-				if(currentRot > thirdRot && state == 10){
-					state = 11;
-				}
+			if(currentRot < firstRot && state == 0){
+				state = 1;
 			}
-			else if(!encoders){
-				int FirstAction = (228.375*timeCon);//184
-				int SecondAction = (182.75*timeCon)+FirstAction;//284
-				int ThirdAction = (72.0*liftCon)+SecondAction;//410
-				int FourthAction = (18.805*timeCon)+ThirdAction;//460
-				if(timer < FirstAction){
-					state = 1;//Drive between start and first action
-				}
-				if(timer >= FirstAction && state == 1){
-					state = 2;//Stopping at first action
-				}
-				if(timer > FirstAction && state == 2 && !turnComplete){
-					state = 3;//Turn left 90 degrees
-				}
-				if(state == 3 && turnComplete){
-					state = 4;//Stop and set timer to first action
-				}
-				if(timer > FirstAction && timer < SecondAction && state == 4){
-					state = 5;//Driving between First and Second action
-				}
-				if(timer >= SecondAction && state == 5){
-					state = 6;//Stopping at second action
-				}
-				if(timer > SecondAction && timer < ThirdAction && state == 6){
-					state = 7;//Lifting from second to third action
-				}
-				if(state == 7 && timer > ThirdAction && !turnComplete){
-					state = 8;//Turning right at third action
-				}
-				if(state == 8 && turnComplete){
-					state = 9; //Stopping and setting timer to third action
-				}
-				if(timer > ThirdAction && timer < FourthAction && state == 9){
-					state = 10;//Driving forward between third and fourth action
-					}
-				if(timer > FourthAction && state == 10){
-					state = 11;//Stopping and dropping at fourth action
-					}
-
+			if(currentRot > firstRot && !turnComplete && state == 1){
+				Stop();
+				state = 3;
 			}
-			if (state == 1){
-						DriveStraight(autonSpeed);
-					}
-					else if (state == 2){
-						Stop();
-					}
-					else if (state == 3){
-						Turn(-90);
-					}
-					else if (state == 4){
-						Stop();
-						timer = FirstAction;
-					}
-					else if (state == 5){
-						turnComplete = false;
-						DriveStraight(autonSpeed);
-						Lifter(1);
-						armSol->Set(true);
-					}
-					else if (state == 6){
-						Stop();
-					}
-					else if(state == 7){
-						Lifter(1);
-					}
-					else if(state == 8){
-						Lifter(0);
-						Turn(90);
-					}
+			if(turnComplete && state == 3 && currentRot < secondRot){
+				state = 5;
+			}
 
-					else if(state == 9){
-						Stop();
-						timer = ThirdAction;
-						turnComplete = false;
-					}
-					else if(state == 10){
-					DriveStraight(autonSpeed);
-					}
-					else if(state == 11){
-						Stop();
-						autonThrow(0.7);
-					}
+			if( state == 5 && !turnComplete && currentRot >= secondRot){
+				state = 8;
+			}
+			if(turnComplete && state == 8){
+				state = 10;
+			}
+			if(currentRot > thirdRot && state == 10){
+				state = 11;
+			}
+		}
+		else if(!encoders){
+			int FirstAction = (228.375*timeCon);//184
+			int SecondAction = (182.75*timeCon)+FirstAction;//284
+			int ThirdAction = (72.0*liftCon)+SecondAction;//410
+			int FourthAction = (18.805*timeCon)+ThirdAction;//460
+			if(timer < FirstAction){
+				state = 1;//Drive between start and first action
+			}
+			if(timer >= FirstAction && state == 1){
+				state = 2;//Stopping at first action
+			}
+			if(timer > FirstAction && state == 2 && !turnComplete){
+				state = 3;//Turn left 90 degrees
+			}
+			if(state == 3 && turnComplete){
+				state = 4;//Stop and set timer to first action
+			}
+			if(timer > FirstAction && timer < SecondAction && state == 4){
+				state = 5;//Driving between First and Second action
+			}
+			if(timer >= SecondAction && state == 5){
+				state = 6;//Stopping at second action
+			}
+			if(timer > SecondAction && timer < ThirdAction && state == 6){
+				state = 7;//Lifting from second to third action
+			}
+			if(state == 7 && timer > ThirdAction && !turnComplete){
+				state = 8;//Turning right at third action
+			}
+			if(state == 8 && turnComplete){
+				state = 9; //Stopping and setting timer to third action
+			}
+			if(timer > ThirdAction && timer < FourthAction && state == 9){
+				state = 10;//Driving forward between third and fourth action
+			}
+			if(timer > FourthAction && state == 10){
+				state = 11;//Stopping and dropping at fourth action
+			}
+		}
+		if (state == 1){
+			DriveStraight(autonSpeed);
+			}
+		else if (state == 2){
+			Stop();
+		}
+		else if (state == 3){
+			Turn(90);
+		}
+		else if (state == 4){
+			Stop();
+			timer = FirstAction;
+		}
+		else if (state == 5){
+			if(halfFarScale == false)
+			{
+				turnComplete = false;
+				DriveStraight(autonSpeed);
+				Lifter(1);
+				armSol->Set(true);
+			}
 
+			else if(halfFarScale == true)
+			{
+				state = -1;
+				DriveStraight(autonSpeed);
+				if (timer > FirstAction + (182.75*timeCon/2))
+					Stop();						}
+			}
+			else if (state == 6){
+				Stop();
+			}
+			else if(state == 7){
+				Lifter(1);
+			}
+			else if(state == 8){
+				Lifter(0);
+				Turn(-90);
+			}
+
+			else if(state == 9){
+				Stop();
+				timer = ThirdAction;
+				turnComplete = false;
+			}
+			else if(state == 10){
+				DriveStraight(autonSpeed);
+			}
+			else if(state == 11){
+				Stop();
+				autonThrow(0.7);
+			}
 	}
+
+	void RightOneHalf()
+	{
+		encoders = true;
+		if(encoders){
+			currentRot = -1*(lr->GetSelectedSensorPosition(0));
+			currentLift = sLift->GetSelectedSensorPosition(0);
+			FirstDistance = 200.0;
+			SecondDistance = 160.0/2;
+			ThirdDistance = 30.0;
+			firstRot = (int)(((FirstDistance)/ipr)*1.0);
+			secondRot = (int)(((SecondDistance)/ipr)*1.0);
+			thirdRot = (int)(((ThirdDistance)/ipr)*1.0);
+
+			if(currentRot < firstRot && state == 0){
+				state = 1;
+			}
+			if(currentRot > firstRot && !turnComplete && state == 1){
+				Stop();
+				state = 3;
+			}
+			if(turnComplete && state == 3 && currentRot < secondRot){
+				state = 5;
+			}
+			if( state == 5 && currentRot >= secondRot){
+				state = 6;
+			}
+
+		}
+		else if(!encoders){
+			int FirstAction = (228.375*timeCon);//184
+			int SecondAction = (182.75*timeCon)+FirstAction;//284
+
+			if(timer < FirstAction){
+				state = 1;//Drive between start and first action
+			}
+			if(timer >= FirstAction && state == 1){
+				state = 2;//Stopping at first action
+			}
+			if(timer > FirstAction && state == 2 && !turnComplete){
+				state = 3;//Turn left 90 degrees
+			}
+			if(state == 3 && turnComplete){
+				state = 4;//Stop and set timer to first action
+			}
+			if(timer > FirstAction && timer < SecondAction && state == 4){
+				state = 5;//Driving between First and Second action
+			}
+
+		}
+		if (state == 1){
+			DriveStraight(autonSpeed);
+			}
+		else if (state == 2){
+			Stop();
+		}
+		else if (state == 3){
+			Turn(90);
+		}
+		else if (state == 4){
+			Stop();
+			timer = FirstAction;
+		}
+		else if (state == 5){
+			DriveStraight(autonSpeed);
+
+		} else if (state == 6) {
+			Stop();
+		}
+	}
+
+
 	void RightTwo()
 	{
 		encoders = false;
@@ -1234,7 +1396,7 @@ public:
 		if(encoders){
 			currentRot = -1*(lr->GetSelectedSensorPosition(0));
 			currentLift = sLift->GetSelectedSensorPosition(0);
-			FirstDistance = 140.0;
+			FirstDistance = 130.0;
 			FirstDistanceV2 = 150.0;
 			SecondDistance = 9.0;
 			ThirdDistance = 6.0;
@@ -1608,7 +1770,7 @@ public:
 
 		//if (autonIsBlueAlliance == true)
 		//{
-//			if (/*left switch is blue*/)
+//			if (/*left switch is blue*/
 //			{
 //				autonIsLeftSwitch = true;
 //			}
@@ -1718,6 +1880,11 @@ public:
 		frc::SmartDashboard::PutString("gameData", gameData);
 		std::cout<<state<<std::endl;
 
+		halfFarScale = frc::SmartDashboard::GetBoolean("Half Far Scale?", halfFarScale);
+
+		pWheelL -> Set(ControlMode::PercentOutput, -.1);
+		pWheelR -> Set(ControlMode::PercentOutput, .1);
+
 			if(gameData.length() > 0){
 				if(robotPos == 0){
 					AutonLine();
@@ -1733,12 +1900,19 @@ public:
 				}
 
 				else if(gameData[1] == 'L' && robotPos == 3){
-					LeftThree();
+					if(halfFarScale == true)
+						LeftThreeHalf();
+					else
+						LeftThree();
 					std::cout<<"Left Three - Robot on right, scale on left"<<std::endl;
 
 				}
 				else if(gameData[1] == 'R' && robotPos == 1){
-					RightOne();
+					if(halfFarScale == true)
+						RightOneHalf();
+					else
+						RightOne();
+
 					std::cout<<"Right One - Robot on Left, scale on Right"<<std::endl;
 
 				}
