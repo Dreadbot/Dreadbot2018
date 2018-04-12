@@ -115,6 +115,7 @@ class Robot : public frc::IterativeRobot
 	bool LiftComplete;
 	frc::SendableChooser<int> posChooser;
 	frc::SendableChooser<bool> encodeChooser;
+	frc::SendableChooser<bool> halfwayChooser;
 	double oneSecond = 50;
 	double halfSecond = 25;
 	double twoSeconds = 100;
@@ -195,8 +196,11 @@ public:
     	posChooser.AddObject("Right", 3);
     	encodeChooser.AddDefault("Yes", true);
     	encodeChooser.AddObject("No", false);
+    	halfwayChooser.AddDefault("Yes", true);
+    	halfwayChooser.AddObject("No", false);
     	frc::SmartDashboard::PutData("robotPos", &posChooser);
     	frc::SmartDashboard::PutData("Using Encoders?", &encodeChooser);
+    	frc::SmartDashboard::PutData("Halfway Scale?", &halfwayChooser);
     	lf->ConfigNominalOutputForward(0,0);
     	lr->ConfigNominalOutputForward(0,0);
     	rf->ConfigNominalOutputForward(0,0);
@@ -667,7 +671,7 @@ public:
 		if(encoders){
 			currentRot = -1*(lr->GetSelectedSensorPosition(0));
 			FirstDistance = 70.0;
-			SecondDistance = 160.0;
+			SecondDistance = 155.0;
 			ThirdDistance = 70.0;
 			firstRot = (int)(((FirstDistance)/ipr)*1.0);
 			secondRot = (int)(((SecondDistance)/ipr)*1.0) + firstRot;
@@ -689,7 +693,7 @@ public:
 		}
 		else if(!encoders){
 			FirstAction = (76.0*timeCon);//originally 30
-			SecondAction = (63.0*strafeCon) + FirstAction;//originally 180
+			SecondAction = (75.0*strafeCon) + FirstAction;//originally 180
 			ThirdAction = (141.0*timeCon) + SecondAction;//originally 250
 
 			if(timer < FirstAction){
@@ -744,7 +748,7 @@ public:
 			currentRot = -1*(lr->GetSelectedSensorPosition(0));
 			currentLift = sLift->GetSelectedSensorPosition(0);
 			FirstDistance = 200.0;
-			SecondDistance = 160.0;
+			SecondDistance = 172.0;
 			ThirdDistance = 30.0;
 			firstRot = (int)(((FirstDistance)/ipr)*1.0);
 			secondRot = (int)(((SecondDistance)/ipr)*1.0);
@@ -850,7 +854,7 @@ public:
 		}
 		else if(state == 11){
 			Stop();
-			autonThrow(0.7);
+			autonThrow(0.5);
 		}
 
 	}
@@ -1046,7 +1050,7 @@ public:
 			currentRot = -1*(lr->GetSelectedSensorPosition(0));
 			currentLift = sLift->GetSelectedSensorPosition(0);
 			FirstDistance = 200.0;
-			SecondDistance = 160.0;
+			SecondDistance = 172.0;
 			ThirdDistance = 30.0;
 			firstRot = (int)(((FirstDistance)/ipr)*1.0);
 			secondRot = (int)(((SecondDistance)/ipr)*1.0);
@@ -1162,7 +1166,7 @@ public:
 			}
 			else if(state == 11){
 				Stop();
-				autonThrow(0.7);
+				autonThrow(0.5);
 			}
 	}
 
@@ -1266,7 +1270,7 @@ public:
 		else if(!encoders){
 			FirstAction = (76.0*timeCon);//30
 			std::cout<<FirstAction<<std::endl;
-			SecondAction = (58.0*strafeCon)+FirstAction;//180
+			SecondAction = (66.0*strafeCon)+FirstAction;//180
 			std::cout<<SecondAction<<std::endl;
 			ThirdAction = (141.0*timeCon)+SecondAction;//250
 			std::cout<<ThirdAction<<std::endl;
@@ -1827,6 +1831,8 @@ public:
 		SmartDashboard::PutNumber("LR Encoder Value", LRsensorPos);
 		std::cout<<LRsensorPos<<std::endl;
 
+		gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
+
 		//These are the numbers coming from the vision camera
 		centerX = SmartDashboard::GetNumber("yellowbox.contour_1.cx", -1);
 		centerY = SmartDashboard::GetNumber("yellowbox.contour_1.cy", -1);
@@ -1869,7 +1875,7 @@ public:
 		frc::SmartDashboard::PutString("gameData", gameData);
 		std::cout<<state<<std::endl;
 
-		halfFarScale = frc::SmartDashboard::GetBoolean("Half Far Scale?", halfFarScale);
+		halfFarScale = halfwayChooser.GetSelected();
 
 		pWheelL -> Set(ControlMode::PercentOutput, -.1);
 		pWheelR -> Set(ControlMode::PercentOutput, .1);
