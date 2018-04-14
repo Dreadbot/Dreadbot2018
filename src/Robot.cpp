@@ -137,6 +137,7 @@ class Robot : public frc::IterativeRobot
 	double FirstDistance;
 	double SecondDistance;
 	double ThirdDistance;
+	double OldThirdDistance;
 	double FourthDistance;
 	double FifthDistance;
 	double FirstDistanceV2;
@@ -749,10 +750,13 @@ public:
 			currentLift = sLift->GetSelectedSensorPosition(0);
 			FirstDistance = 200.0;
 			SecondDistance = 172.0;
-			ThirdDistance = 30.0;
+			OldThirdDistance = 30.0;
+			ThirdDistance = 42.0;
+			FourthDistance = 14.0;
 			firstRot = (int)(((FirstDistance)/ipr)*1.0);
 			secondRot = (int)(((SecondDistance)/ipr)*1.0);
 			thirdRot = (int)(((ThirdDistance)/ipr)*1.0);
+			fourthRot = (int)(((FourthDistance)/ipr)*1.0);
 			if(currentRot < firstRot && state == 0){
 				state = 1;
 			}
@@ -773,6 +777,17 @@ public:
 			if(currentRot > thirdRot && state == 10){
 				state = 11;
 			}
+
+			if(clawSol->Get() == true && state == 11)
+			{
+				state = 12;
+			}
+
+			if(currentRot < fourthRot && state == 12)
+			{
+				state = 13;
+			}
+
 		}
 		else if(!encoders){
 			int FirstAction = (228.375*timeCon);//184
@@ -854,7 +869,17 @@ public:
 		}
 		else if(state == 11){
 			Stop();
-			autonThrow(0.5);
+			Drop();
+		}
+
+		else if(state == 12)
+		{
+			DriveStraight(-autonSpeed);
+		}
+
+		else if (state == 13)
+		{
+			Stop();
 		}
 
 	}
@@ -965,6 +990,7 @@ public:
 			if(timer >= 100 && state == 6){
 				state = 7;
 			}
+
 		}
 		else if(!encoders){
 			std::cout<<"LeftScale"<<std::endl;
@@ -1034,7 +1060,7 @@ public:
 		}
 		else if(state == 6){
 			autonThrow(0.7);
-			DriveStraight(-0.1);
+			DriveStraight(-0.15);
 			std::cout<<"ejecting"<<std::endl;
 		}
 		else if(state == 7){
@@ -1051,11 +1077,13 @@ public:
 			currentLift = sLift->GetSelectedSensorPosition(0);
 			FirstDistance = 200.0;
 			SecondDistance = 172.0;
-			ThirdDistance = 30.0;
+			OldThirdDistance = 30.0;
+			ThirdDistance = 42.0;
+			FourthDistance = 14.0;
 			firstRot = (int)(((FirstDistance)/ipr)*1.0);
 			secondRot = (int)(((SecondDistance)/ipr)*1.0);
 			thirdRot = (int)(((ThirdDistance)/ipr)*1.0);
-
+			fourthRot = (int)(((FourthDistance)/ipr)*1.0);
 			if(currentRot < firstRot && state == 0){
 				state = 1;
 			}
@@ -1076,6 +1104,17 @@ public:
 			if(currentRot > thirdRot && state == 10){
 				state = 11;
 			}
+
+			if (clawSol->Get() == true && state == 11)
+			{
+				state = 12;
+			}
+
+			if (currentRot < fourthRot && state == 12)
+			{
+				state = 13;
+			}
+
 		}
 		else if(!encoders){
 			int FirstAction = (228.375*timeCon);//184
@@ -1130,31 +1169,21 @@ public:
 			timer = FirstAction;
 		}
 		else if (state == 5){
-			if(halfFarScale == false)
-			{
-				turnComplete = false;
-				DriveStraight(autonSpeed);
-				Lifter(1);
-				armSol->Set(true);
-			}
-
-			else if(halfFarScale == true)
-			{
-				state = -1;
-				DriveStraight(autonSpeed);
-				if (timer > FirstAction + (182.75*timeCon/2))
-					Stop();						}
-			}
-			else if (state == 6){
-				Stop();
-			}
-			else if(state == 7){
-				Lifter(1);
-			}
-			else if(state == 8){
-				Lifter(0);
-				Turn(-90);
-			}
+			turnComplete = false;
+			DriveStraight(autonSpeed);
+			Lifter(1);
+			armSol->Set(true);
+		}
+		else if (state == 6){
+			Stop();
+		}
+		else if(state == 7){
+			Lifter(1);
+		}
+		else if(state == 8){
+			Lifter(0);
+			Turn(-90);
+		}
 
 			else if(state == 9){
 				Stop();
@@ -1166,7 +1195,16 @@ public:
 			}
 			else if(state == 11){
 				Stop();
-				autonThrow(0.5);
+				Drop();
+			}
+			else if (state == 12)
+			{
+				DriveStraight(-autonSpeed);
+			}
+
+			else if (state == 13)
+			{
+				Stop();
 			}
 	}
 
@@ -1489,7 +1527,7 @@ public:
 		}
 		else if(state == 6){
 			autonThrow(0.7);
-			DriveStraight(-0.1);
+			DriveStraight(-0.15);
 			std::cout<<"ejecting"<<std::endl;
 		}
 		else if(state == 7){
@@ -1877,8 +1915,8 @@ public:
 
 		halfFarScale = halfwayChooser.GetSelected();
 
-		pWheelL -> Set(ControlMode::PercentOutput, -.1);
-		pWheelR -> Set(ControlMode::PercentOutput, .1);
+		pWheelL -> Set(ControlMode::PercentOutput, -.15);
+		pWheelR -> Set(ControlMode::PercentOutput, .15);
 
 			if(gameData.length() > 0){
 				if(robotPos == 0){
