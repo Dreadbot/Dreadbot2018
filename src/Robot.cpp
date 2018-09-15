@@ -71,7 +71,7 @@ class Robot : public frc::IterativeRobot
 	//controller 1 buttons
 	int retractBird = 2;
 	int extendBird = 3;
-	int deployBirdArm = 4;
+//	int deployBirdArm = 4;
 	int skyLiftDown = 5;
 	int cubeDrop = 6;
 	int skyLiftUp = 7;
@@ -116,6 +116,7 @@ class Robot : public frc::IterativeRobot
 	frc::SendableChooser<int> posChooser;
 	frc::SendableChooser<bool> encodeChooser;
 	frc::SendableChooser<bool> halfwayChooser;
+	frc::SendableChooser<bool> doubleChooser;
 	double oneSecond = 50;
 	double halfSecond = 25;
 	double twoSeconds = 100;
@@ -148,6 +149,22 @@ class Robot : public frc::IterativeRobot
 	int fifthRot;
 	int firstRotV2;
 	bool halfFarScale;
+	bool DoubleScale;
+
+	double blockAngle = 0;
+	const double FocalLength = 424;
+	const double Pi = 3.1415;
+	const double Offset = 0.0;
+	double angleTotal = 0;
+	bool foundBlock = false;
+	bool State7Done = false;
+	double BlockDistance = 0.0;
+	int blockRotation = 0;
+	double reverseDistance = 0.0;
+	int reverseRotation = 0;
+	double sixthDistance = 0.0;
+	int sixthRotation = 0;
+	double seventhDistance = 0.0;
 
 //------------------------------------------------------
 //Vision Variables
@@ -199,9 +216,12 @@ public:
     	encodeChooser.AddObject("No", false);
     	halfwayChooser.AddDefault("Yes", true);
     	halfwayChooser.AddObject("No", false);
+    	doubleChooser.AddObject("Yes", true);
+    	doubleChooser.AddObject("No", false);
     	frc::SmartDashboard::PutData("robotPos", &posChooser);
     	frc::SmartDashboard::PutData("Using Encoders?", &encodeChooser);
     	frc::SmartDashboard::PutData("Halfway Scale?", &halfwayChooser);
+    	frc::SmartDashboard::PutData("Double Scale?", &doubleChooser);
     	lf->ConfigNominalOutputForward(0,0);
     	lr->ConfigNominalOutputForward(0,0);
     	rf->ConfigNominalOutputForward(0,0);
@@ -319,8 +339,8 @@ public:
 			lf -> Set(ControlMode :: PercentOutput, -speed);
 			lr -> Set(ControlMode :: PercentOutput, -speed);
 			rr -> Set(ControlMode :: PercentOutput, speed);
-			}
 		}
+	}
 	void StrafeStraight(std::string side)
 		{
 			double slop = 5;
@@ -340,14 +360,12 @@ public:
 				float angDiff = setAngle - currentAngle;
 
 				if(angDiff < -slop)
-				{
 					rotSpeed = -thisAuton/3;
-				}
+
 
 				if(angDiff > slop)
-				{
 					rotSpeed = thisAuton/3;
-				}
+
 			}
 			if(side == "left")
 			{
@@ -362,14 +380,11 @@ public:
 				thisAuton = -thisAuton;
 
 				if(angDiff < -slop)
-				{
 					rotSpeed = thisAuton/3;
-				}
 
 				if(angDiff > slop)
-				{
 					rotSpeed = -thisAuton/3;
-				}
+
 			}
 			AutonMecDrive(thisAuton, 0, rotSpeed);
 		}
@@ -392,16 +407,10 @@ public:
 	{
 		//raise or lower the lifting device
 		if (x == 1)
-		{
 			sLift->Set(-1);
 
-
-		}
-		else if(x==0){
+		else if(x==0)
 			sLift->Set(-.2);
-		}
-
-
 
 	}
 	bool turnComplete = false;
@@ -412,12 +421,12 @@ public:
 //		frc::SmartDashboard::PutNumber("Want Angle", wantAngle);
 //		frc::SmartDashboard::PutNumber("Current Angle", CurrentAngle);
 		int slop = 5;
-		if(wantAngle < currentAngle - slop){
+		if(wantAngle < currentAngle - slop)
 			TurnLeft(autonTurnSpeed);
-		}
-		else if(wantAngle > currentAngle + slop){
+
+		else if(wantAngle > currentAngle + slop)
 			TurnRight(autonTurnSpeed);
-		}
+
 		else{
 			Stop();
 			turnComplete = true;
@@ -441,11 +450,9 @@ public:
 			distance = ultra->GetRangeInches();
 			SmartDashboard::PutNumber("Distance", distance);
 				}
-		if (distance < 44 && distance >= 8){
-
+		if (distance < 44 && distance >= 8)
 		driveSpeed = driveSpeed * 0.9;
 
-		}
 		if (distance < 8) {
 		//driveMode = DriveMode::Pickup;
 		lf ->Set(ControlMode::PercentOutput, 0);
@@ -461,19 +468,16 @@ public:
 									 //2. rewinds the pole by making the motor negative 3. stops the motor
 		{
 			if (extend > 0)
-			{
 				cExtend->Set(1);
-			}
+
 
 			else if (extend < 0)
-			{
 				cExtend->Set(-1);
-			}
+
 
 			else if (extend == 0)
-			{
 				cExtend->Set(0.0);
-			}
+
 		}
 
 
@@ -486,9 +490,8 @@ public:
 			isYDown = true;
 		}
 		else if(!js1->GetRawButton(4) && isBirdOut == true)
-		{
 			isYDown = false;
-		}
+
 		else if(js1->GetRawButton(4) && isBirdOut == true && isYDown == false)
 		{
 			birdSol->Set(false);
@@ -496,9 +499,8 @@ public:
 			isYDown = true;
 		}
 		else if(!js1->GetRawButton(4) && isBirdOut == false)
-		{
 			isYDown = false;
-		}
+
 	}
 	void winch()
 		{
@@ -507,11 +509,13 @@ public:
 				cWinch->Set(-1);
 				cWinch2->Set(-1);
 			}
+
 			else if(js1->GetRawButton(10))
 			{
 				cWinch->Set(1);
 				cWinch2->Set(1);
 			}
+
 			else
 			{
 				cWinch->Set(0);
@@ -519,47 +523,57 @@ public:
 			}
 		}
 
+	void FindBlock(){
+			if(centerX > -1){
+			blockAngle = (180/Pi) * atan((centerX - 200)/FocalLength) + Offset;
+			currentAngle = gyro->GetYaw();
+			angleTotal = currentAngle + blockAngle;
+			SmartDashboard::PutNumber("Total Angle", angleTotal);
+			SmartDashboard::PutNumber("Camera Angle", blockAngle);
+			SmartDashboard::PutNumber("Current Angle 1", currentAngle);
+			SmartDashboard::PutNumber("Block Angle", blockAngle);
+			foundBlock = true;
+			}
+	}
+
 	void teleopSkyLift()
 	{
 		bool goingUp = js1->GetRawButton(skyLiftUp);
 		bool goingDown = js1->GetRawButton(skyLiftDown);
 
-		if(!goingUp && !goingDown){
+		if(!goingUp && !goingDown)
 			sLift ->Set(0);
-		}
-		else if(goingUp){
+
+		else if(goingUp)
 		 sLift ->Set(-1);
-		}
-		else if(goingDown){
+
+		else if(goingDown)
 			sLift ->Set(1);
-		}
+
 	}
 
 	void teleopArmControl() //Secondary controller controls to move grabber
 	{
 		if(js2->GetRawButton(pickupArmsUp))
-		{
 			armSol->Set(false);
-		}
+
 		if(js2->GetRawButton(pickupArmsDown))
-		{
 			armSol->Set(true);
-		}
+
 		if(js2->GetRawButton(openArms))
-		{
 			clawSol->Set(true);
-		}
+
 		if(js2->GetRawButton(closeArms))
-		{
 			clawSol->Set(false);
-		}
+
 	}
 
 	void Drop()
 	{
 		armSol->Set(true);
 		clawSol->Set(true);
-		}
+	}
+
 	void autonThrow(double x){
 		pWheelL->Set(x);
 		pWheelR->Set(-x);
@@ -606,6 +620,7 @@ public:
 
 	void LeftOne()
 	{
+		encoders = true;
 	if(encoders){
 		currentRot = -1*(lr->GetSelectedSensorPosition(0));
 		currentLift = sLift->GetSelectedSensorPosition(0);
@@ -613,20 +628,26 @@ public:
 		LiftHeight = 36;
 		firstRot = (int)(((FirstDistance)/ipr)*1.0);
 		liftRot = (int)(((LiftHeight)/iprLift)*1.0);
+
 		if(currentRot < firstRot){
 			state = 1;
 		}
+
 		if(currentRot > firstRot && currentLift < liftRot && state == 1){
 			Stop();
 			state = 3;
 		}
+
 		if(currentLift >= liftRot && !turnComplete && state == 3){
 			state = 4;
 		}
+
 		if(turnComplete && state == 4){
 			state = 5;
 		}
+
 	}
+	/*
 	else if(!encoders){
 			FirstAction = (140.0*timeCon);//210
 			SecondAction = (72.0*liftCon)+FirstAction;//240
@@ -648,6 +669,8 @@ public:
 				state = 5; //Stopping the motors and drop the cube.
 			}
 		}
+	*/
+
 		if(state == 1){
 			DriveStraight(autonSpeed);
 		}
@@ -661,9 +684,10 @@ public:
 			Lifter(0);
 			Turn(90);
 		}
+
 		else if(state == 5){
-			Stop();
 			Drop();
+			Stop();
 		}
 	}
 	void LeftTwo()
@@ -765,13 +789,16 @@ public:
 				state = 3;
 			}
 			if(turnComplete && state == 3 && currentRot < secondRot){
+				currentRot = 0;
 				state = 5;
 			}
 
 			if( state == 5 && !turnComplete && currentRot >= secondRot){
+				currentRot = 0;
 				state = 8;
 			}
 			if(turnComplete && state == 8){
+				currentRot = 0;
 				state = 10;
 			}
 			if(currentRot > thirdRot && state == 10){
@@ -823,6 +850,7 @@ public:
 			}
 			if(timer > ThirdAction && timer < FourthAction && state == 9){
 				state = 10;//Driving forward between third and fourth action
+				currentRot = 0;
 				}
 			if(timer > FourthAction && state == 10){
 				state = 11;//Stopping and dropping at fourth action
@@ -1017,8 +1045,8 @@ public:
 
 			}
 			if(timer > SecondAction && state == 3 && !turnComplete){
+				currentRot = 0;
 				state = 4;//turning right 90 degrees
-
 			}
 			if(turnComplete && state == 4){
 				state = 5; //Driving forward a little, between second and third action
@@ -1059,7 +1087,7 @@ public:
 			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 6){
-			autonThrow(0.7);
+			autonThrow(0.4);
 			DriveStraight(-0.15);
 			std::cout<<"ejecting"<<std::endl;
 		}
@@ -1069,6 +1097,234 @@ public:
 			std::cout<<"stopping"<<std::endl;
 		}
 	}
+	void LeftScale_DoubleAuton()
+			{
+				encoders = true;
+				if(encoders){
+					currentRot = -1*(lr->GetSelectedSensorPosition(0));
+					currentLift = sLift->GetSelectedSensorPosition(0);
+					FirstDistance = 100.0;
+					FirstDistanceV2 = 125.0;
+					SecondDistance = 24.0;
+					ThirdDistance = 6.0;
+					LiftHeight = 72;
+					BlockDistance = 54.0;
+					liftRot = (int)(((LiftHeight)/iprLift)*1.0);
+					firstRot = (int)(((FirstDistance)/ipr)*1.0);
+					firstRotV2 = (int)(((FirstDistanceV2)/ipr)*1.0)+firstRot;
+					secondRot = (int)(((SecondDistance)/ipr)*1.0);
+					thirdRot = (int)(((ThirdDistance)/ipr)*1.0) + secondRot;
+					blockRotation = (int)(((BlockDistance)/ipr)*1.0);
+					reverseDistance = -36.0;
+					reverseRotation = (int)(((reverseDistance)/ipr)*1.0);
+					sixthDistance = 36.0;
+					sixthRotation = (int)(((sixthDistance)/ipr)*1.0);
+					seventhDistance = -12.0;
+					SmartDashboard::PutNumber("Block Angle", blockAngle);
+					//SmartDashboard::PutNumber("", autonPosition);
+
+					if(currentRot < firstRot && state == 0){
+						state = 1;
+					}
+					if( currentRot > firstRot && state == 1){
+						Lifter(1);
+						armSol->Set(true);
+						//currentLift < liftRot &&
+					}
+					if(currentRot >= firstRotV2 && !turnComplete && state == 1){
+						currentRot = 0;
+						state = 4;
+					}
+					if(turnComplete && state == 4){
+						state = 5;
+						currentRot = 0;
+					}
+					if(currentRot >= secondRot && state == 5){
+						state = 6;
+						timer = 0;
+					}
+					if(timer >= 50 && state == 6){
+						state = 7;
+						turnComplete = false;
+					}
+					if(State7Done && state == 7){
+							state = 8; //turn 90 to right
+						}
+					if(turnComplete && state == 8){
+						currentRot = 0;
+						state = 9;//finding block angle
+					}
+					if (foundBlock && state == 9){
+						state = 10; //turning toward block angle
+						turnComplete = false;
+					}
+					if(turnComplete && state == 10){
+						currentRot = 0;
+						state = 11;//drive forward
+						timer = 0;
+					}
+					if((currentRot >= blockRotation || timer>150) && state == 11){
+						state = 12;
+						timer = 0;
+						//stop and grab
+					}
+					if(timer > 50 && state == 12){
+						lr->SetSelectedSensorPosition(0, 0, 0);
+						state = 13; //backup
+					}
+					if(currentRot <= reverseRotation && state == 13){
+						state = 14;//turn torward scale
+						turnComplete = false;
+					}
+					if(timer >= 200 && turnComplete && state == 14){
+						currentRot = 0;
+						state = 15; //drive forward
+					}
+					if(currentRot >= sixthRotation && state == 15){
+						state = 16; //shooting
+						timer = 0;
+					}
+					if(timer >= 100 && state == 16){
+						state = 17; //stop
+					}
+				}
+				else if(!encoders){
+					std::cout<<"LeftScale"<<std::endl;
+					FirstAction = (290.0*timeCon);//210
+					SecondAction = (90.0*liftCon)+FirstAction;//240
+					ThirdAction  = (30.0*timeCon)+SecondAction;
+					FourthAction = (18.0*timeCon)+ThirdAction;
+					std::cout<<state<<std::endl;
+					std::cout<<timer<<std::endl;
+					std::cout<<FirstAction<<std::endl;
+					std::cout<<SecondAction<<std::endl;
+					std::cout<<ThirdAction<<std::endl;
+
+					if(timer < FirstAction){
+						state = 1;//Driving from start to First action
+
+					}
+					if(timer >= FirstAction && state == 1){
+						state = 2;//stopping at first action
+
+					}
+					if(timer > FirstAction && timer < SecondAction){
+						state = 3;//lifting between first and second action
+
+					}
+					if(timer > SecondAction && state == 3 && !turnComplete){
+						state = 4;//turning right 90 degrees
+
+					}
+					if(turnComplete && state == 4){
+						state = 5; //Driving forward a little, between second and third action
+						timer = SecondAction;
+					}
+					if(timer > ThirdAction && timer < FourthAction && state == 5){
+						state = 6;
+
+						}
+					if(timer >= FourthAction && state == 6){
+						state = 7;
+
+					}
+				}
+				if(state == 1){
+					DriveStraight(autonSpeed);
+					std::cout<<"driving"<<std::endl;
+				}
+				else if(state == 2){
+					Stop();
+					//DriveStraight(autonSpeed);
+					std::cout<<"stop"<<std::endl;
+				}
+				else if(state == 3){
+					DriveStraight(autonSpeed);
+					Lifter(1);
+					armSol->Set(true);
+					std::cout<<"lifting"<<std::endl;
+				}
+				else if(state == 4){
+					Lifter(0);
+					Turn(45);
+					std::cout<<"turning"<<std::endl;
+				}
+				else if(state == 5){
+					DriveStraight(autonSpeed);
+
+					std::cout<<"driving"<<std::endl;
+				}
+				else if(state == 6){
+
+					autonThrow(0.7);
+					DriveStraight(-0.1);
+					std::cout<<"ejecting"<<std::endl;
+				}
+				else if(state == 7){
+					Stop();
+					autonThrow(0.0);
+					State7Done = true;
+					std::cout<<"stopping"<<std::endl;
+				}
+				else if(state == 8){
+					Turn(90);
+					std::cout<<"state = 8 turn2"<<std::endl;
+				}
+				else if(state == 9){
+					FindBlock();
+					std::cout<<"state=9,findingblockangle"<<std::endl;
+				}
+				else if(state == 10){
+					Turn(angleTotal);
+					Lifter(-1);
+					clawSol->Set(true);
+					SmartDashboard::PutNumber("Angle Total (same)", angleTotal);
+					std::cout<<"state=10,turningtoblock"<<std::endl;
+				}
+				else if(state == 11){
+					DriveStraight(0.3);
+					Lifter(-1);
+					pWheelL->Set(.75);
+					pWheelR->Set(-.75);
+					std::cout<<"state=11,driving"<<std::endl;
+				}
+				else if(state == 12){
+					Stop();
+					clawSol->Set(false);
+					std::cout<<"state=12,grabbing block"<<std::endl;
+					Lifter(0);
+				}
+				else if(state == 13){
+					DriveStraight(-0.2);
+					pWheelL->Set(0);
+					pWheelR->Set(0);
+					Lifter(1);
+
+					std::cout<<"state=13,reversing"<<std::endl;
+				}
+				else if(state == 14){
+					Turn(-140 + blockAngle);
+					Lifter(0);
+					std::cout<<"state=14,turning"<<std::endl;
+				}
+				else if(state == 15){
+					DriveStraight(0.2);
+					Lifter(0);
+
+					std::cout<<"state=15,driving"<<std::endl;
+				}
+				else if(state == 16){
+					//(0.5);
+					Drop();
+					DriveStraight(-autonSpeed * 0.5);
+					std::cout<<"state=16,ejecting"<<std::endl;
+				}
+				else if(state == 17){
+					Stop();
+					std::cout<<"state=17,stopping"<<std::endl;
+				}
+			}
+
 	void RightOne()
 	{
 		encoders = true;
@@ -1092,13 +1348,16 @@ public:
 				state = 3;
 			}
 			if(turnComplete && state == 3 && currentRot < secondRot){
+				currentRot = 0;
 				state = 5;
 			}
 
 			if( state == 5 && !turnComplete && currentRot >= secondRot){
+				currentRot = 0;
 				state = 8;
 			}
 			if(turnComplete && state == 8){
+				currentRot = 0;
 				state = 10;
 			}
 			if(currentRot > thirdRot && state == 10){
@@ -1360,6 +1619,7 @@ public:
 		}
 
 	}
+
 	void RightThree()
 	{
 
@@ -1452,6 +1712,7 @@ public:
 				state = 5;
 			}
 			if(currentRot >= secondRot && state == 5){
+				currentRot = 0;
 				state = 6;
 				timer = 0;
 			}
@@ -1526,7 +1787,7 @@ public:
 			std::cout<<"driving"<<std::endl;
 		}
 		else if(state == 6){
-			autonThrow(0.7);
+			autonThrow(0.4);
 			DriveStraight(-0.15);
 			std::cout<<"ejecting"<<std::endl;
 		}
@@ -1536,6 +1797,233 @@ public:
 			std::cout<<"stopping"<<std::endl;
 		}
 	}
+
+	void RightScale_DoubleAuton()
+				{
+					encoders = true;
+					if(encoders){
+						currentRot = -1*(lr->GetSelectedSensorPosition(0));
+						currentLift = sLift->GetSelectedSensorPosition(0);
+						FirstDistance = 100.0;
+						FirstDistanceV2 = 125.0;
+						SecondDistance = 24.0;
+						ThirdDistance = 6.0;
+						LiftHeight = 72;
+						BlockDistance = 54.0;
+						liftRot = (int)(((LiftHeight)/iprLift)*1.0);
+						firstRot = (int)(((FirstDistance)/ipr)*1.0);
+						firstRotV2 = (int)(((FirstDistanceV2)/ipr)*1.0)+firstRot;
+						secondRot = (int)(((SecondDistance)/ipr)*1.0);
+						thirdRot = (int)(((ThirdDistance)/ipr)*1.0) + secondRot;
+						blockRotation = (int)(((BlockDistance)/ipr)*1.0);
+						reverseDistance = -36.0;
+						reverseRotation = (int)(((reverseDistance)/ipr)*1.0);
+						sixthDistance = 36.0;
+						sixthRotation = (int)(((sixthDistance)/ipr)*1.0);
+						seventhDistance = -12.0;
+						SmartDashboard::PutNumber("Block Angle", blockAngle);
+						//SmartDashboard::PutNumber("", autonPosition);
+
+						if(currentRot < firstRot && state == 0){
+							state = 1;
+						}
+						if( currentRot > firstRot && state == 1){
+							Lifter(1);
+							armSol->Set(true);
+							//currentLift < liftRot &&
+						}
+						if(currentRot >= firstRotV2 && !turnComplete && state == 1){
+							currentRot = 0;
+							state = 4;
+						}
+						if(turnComplete && state == 4){
+							currentRot = 0;
+							state = 5;
+						}
+						if(currentRot >= secondRot && state == 5){
+							state = 6;
+							timer = 0;
+						}
+						if(timer >= 50 && state == 6){
+							state = 7;
+							turnComplete = false;
+						}
+						if(State7Done && state == 7){
+								state = 8; //turn 90 to right
+							}
+						if(turnComplete && state == 8){
+							currentRot = 0;
+							state = 9;//finding block angle
+						}
+						if (foundBlock && state == 9){
+							state = 10; //turning toward block angle
+							turnComplete = false;
+						}
+						if(turnComplete && state == 10){
+							currentRot = 0;
+							state = 11;//drive forward
+							timer = 0;
+						}
+						if((currentRot >= blockRotation || timer>150) && state == 11){
+							state = 12;
+							timer = 0;
+							//stop and grab
+						}
+						if(timer > 50 && state == 12){
+							lr->SetSelectedSensorPosition(0, 0, 0);
+							state = 13; //backup
+						}
+						if(currentRot <= reverseRotation && state == 13){
+							state = 14;//turn torward scale
+							turnComplete = false;
+						}
+						if(timer >= 200 && turnComplete && state == 14){
+							currentRot = 0;
+							state = 15; //drive forward
+						}
+						if(currentRot >= sixthRotation && state == 15){
+							state = 16; //shooting
+							timer = 0;
+						}
+						if(timer >= 100 && state == 16){
+							state = 17; //stop
+						}
+					}
+					else if(!encoders){
+						std::cout<<"RightScale"<<std::endl;
+						FirstAction = (290.0*timeCon);//210
+						SecondAction = (90.0*liftCon)+FirstAction;//240
+						ThirdAction  = (30.0*timeCon)+SecondAction;
+						FourthAction = (18.0*timeCon)+ThirdAction;
+						std::cout<<state<<std::endl;
+						std::cout<<timer<<std::endl;
+						std::cout<<FirstAction<<std::endl;
+						std::cout<<SecondAction<<std::endl;
+						std::cout<<ThirdAction<<std::endl;
+
+						if(timer < FirstAction){
+							state = 1;//Driving from start to First action
+
+						}
+						if(timer >= FirstAction && state == 1){
+							state = 2;//stopping at first action
+
+						}
+						if(timer > FirstAction && timer < SecondAction){
+							state = 3;//lifting between first and second action
+
+						}
+						if(timer > SecondAction && state == 3 && !turnComplete){
+							state = 4;//turning right 90 degrees
+
+						}
+						if(turnComplete && state == 4){
+							state = 5; //Driving forward a little, between second and third action
+							timer = SecondAction;
+						}
+						if(timer > ThirdAction && timer < FourthAction && state == 5){
+							state = 6;
+
+							}
+						if(timer >= FourthAction && state == 6){
+							state = 7;
+
+						}
+					}
+					if(state == 1){
+						DriveStraight(autonSpeed);
+						std::cout<<"driving"<<std::endl;
+					}
+					else if(state == 2){
+						Stop();
+						//DriveStraight(autonSpeed);
+						std::cout<<"stop"<<std::endl;
+					}
+					else if(state == 3){
+						DriveStraight(autonSpeed);
+						Lifter(1);
+						armSol->Set(true);
+						std::cout<<"lifting"<<std::endl;
+					}
+					else if(state == 4){
+						Lifter(0);
+						Turn(-45);
+						std::cout<<"turning"<<std::endl;
+					}
+					else if(state == 5){
+						DriveStraight(autonSpeed);
+
+						std::cout<<"driving"<<std::endl;
+					}
+					else if(state == 6){
+						autonThrow(0.4);
+						DriveStraight(-0.1);
+						std::cout<<"ejecting"<<std::endl;
+					}
+					else if(state == 7){
+						Stop();
+						autonThrow(0.0);
+						State7Done = true;
+						std::cout<<"stopping"<<std::endl;
+					}
+					else if(state == 8){
+						Turn(-90);
+						std::cout<<"state = 8 turn2"<<std::endl;
+					}
+					else if(state == 9){
+						FindBlock();
+						std::cout<<"state=9,findingblockangle"<<std::endl;
+					}
+					else if(state == 10){
+						Turn(angleTotal);
+						Lifter(-1);
+						clawSol->Set(true);
+						SmartDashboard::PutNumber("Angle Total (same)", angleTotal);
+						std::cout<<"state=10,turningtoblock"<<std::endl;
+					}
+					else if(state == 11){
+						DriveStraight(0.3);
+						Lifter(-1);
+						pWheelL->Set(.75);
+						pWheelR->Set(-.75);
+						std::cout<<"state=11,driving"<<std::endl;
+					}
+					else if(state == 12){
+						Stop();
+						clawSol->Set(false);
+						std::cout<<"state=12,grabbing block"<<std::endl;
+						Lifter(0);
+					}
+					else if(state == 13){
+						DriveStraight(-0.2);
+						pWheelL->Set(0);
+						pWheelR->Set(0);
+						Lifter(1);
+
+						std::cout<<"state=13,reversing"<<std::endl;
+					}
+					else if(state == 14){
+						Turn(140 + blockAngle);
+						Lifter(0);
+						std::cout<<"state=14,turning"<<std::endl;
+					}
+					else if(state == 15){
+						DriveStraight(0.2);
+						Lifter(0);
+
+						std::cout<<"state=15,driving"<<std::endl;
+					}
+					else if(state == 16){
+						Drop();
+						DriveStraight(-autonSpeed * 0.5);
+						std::cout<<"state=16,ejecting"<<std::endl;
+					}
+					else if(state == 17){
+						Stop();
+						std::cout<<"state=17,stopping"<<std::endl;
+					}
+				}
+
 	void AutonLine()
 	{
 		if(encoders){
@@ -1801,7 +2289,7 @@ public:
 
 		//if (autonIsBlueAlliance == true)
 		//{
-//			if (/*left switch is blue*/
+//			if ()/*left switch is blue*/
 //			{
 //				autonIsLeftSwitch = true;
 //			}
@@ -1914,35 +2402,59 @@ public:
 		std::cout<<state<<std::endl;
 
 		halfFarScale = halfwayChooser.GetSelected();
+		DoubleScale = doubleChooser.GetSelected();
 
 		pWheelL -> Set(ControlMode::PercentOutput, -.15);
 		pWheelR -> Set(ControlMode::PercentOutput, .15);
 
-			if(gameData.length() > 0){
-				if(robotPos == 0){
+			if(gameData.length() > 0)
+			{
+				if(robotPos == 0)
+				{
 					AutonLine();
 					std::cout<<"auto line"<<std::endl;
 				}
-				else if(gameData[1] == 'L' && robotPos == 1){
+
+				else if(gameData[1] == 'L' && robotPos == 1)// && DoubleScale == false)
+				{
 					LeftScale();
 					std::cout<<"Left Scale"<<std::endl;
 				}
-				else if(gameData[1] == 'R' && robotPos == 3){
+		/*
+				else if(gameData[1] == 'L' && robotPos == 1 && DoubleScale == true)
+				{
+					LeftScale_DoubleAuton();
+					std::cout << "Double Left Scale" << std::endl;
+				}
+		*/
+				else if(gameData[1] == 'R' && robotPos == 3)// && DoubleScale == false)
+				{
 					RightScale();
 					std::cout<<"Right Scale"<<std::endl;
 				}
 
-				else if(gameData[1] == 'L' && robotPos == 3){
+		/*		else if(gameData[1] == 'R' && robotPos == 3 && DoubleScale == true)
+				{
+					RightScale_DoubleAuton();
+					std::cout << "Right Double Scale" << std::endl;
+				}
+		*/
+				else if(gameData[1] == 'L' && robotPos == 3)
+				{
 					if(halfFarScale == true)
 						LeftThreeHalf();
+
 					else
 						LeftThree();
+
 					std::cout<<"Left Three - Robot on right, scale on left"<<std::endl;
 
 				}
-				else if(gameData[1] == 'R' && robotPos == 1){
+				else if(gameData[1] == 'R' && robotPos == 1)
+				{
 					if(halfFarScale == true)
 						RightOneHalf();
+
 					else
 						RightOne();
 
