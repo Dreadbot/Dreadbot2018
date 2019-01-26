@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+import numpy as np
+import cv2
+import io
+
+"""
+Capture images when not on a Raspberry PI.
+"""
+
+class MyCamera(object):
+    """A picamera like interface for capturing images."""
+    
+    def __init__(self, camera, camera_port):
+        self.camera = camera
+        self.camera_port = camera_port
+        self.ramp_frames = 30 # number of frames to discard to adjust to light
+
+    def _getImage(self, camera):
+        retval, im = camera.read()
+        return im
+            
+    def capture(self, stream, format=None):
+        closeCamera = not(self.camera)            
+        camera = self.camera
+        try:
+            if not(camera):
+                camera = cv2.VideoCapture(self.camera_port)
+
+            # Adjust to the light
+            for idx in xrange(self.ramp_frames):
+                self._getImage( camera )
+
+            # No we take an image
+            camera_capture = self._getImage( camera )
+
+            cv2.imwrite( stream, camera_capture )
+                
+        finally:
+            if closeCamera and camera:
+                # Close the camera so we can capture an image later
+                del(camera)
+
+cap = cv2.VideoCapture(0)
+camera = MyCamera( cap, 0 )
+
+while(True):
+    # Capture frame-by-frame
+    ret, frame = cap.read()
+
+    # Our operations on the frame come here
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Display the resulting frame
+    cv2.imshow('frame',gray)
+    if cv2.waitKey(1) & 0xFF == ord(' '):
+        camera.capture( "/tmp/output.png" )
+        print( "Wrote to /tmp/output.png" )
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# When everything done, release the capture
+cap.release()
+cv2.destroyAllWindows()

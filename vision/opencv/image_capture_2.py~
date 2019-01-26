@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+from picamera import PiCamera
+from time import sleep
+import os,sys
+from PIL import Image
+import numpy
+import io
+import picamera
+import cv2
+
+# Create the in-memory stream
+stream = io.BytesIO()
+
+camera = PiCamera()
+
+camera.resolution = (800, 600)
+
+#camera.start_preview()
+camera.brightness = 50
+sleep(2)
+camera.capture(stream, format='jpeg')    
+
+"""
+for i in range(2):
+    sleep(0.5)
+    #camera.capture('/home/pi/Desktop/image%s.jpg' % i)
+"""
+
+camera.stop_preview()
+
+data = numpy.fromstring( stream.getvalue(), dtype=numpy.uint8)
+
+image = cv2.imdecode(data, 1)
+
+# Test OpenCV by detecting cats.
+
+# load the cat detector Haar cascade, then detect cat faces
+# in the input image
+
+# Turn the image into gray for detection
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+SCALE_FACTOR=1.1
+cascade="haarcascade_frontalcatface.xml"
+detector = cv2.CascadeClassifier(cascade)
+rects = detector.detectMultiScale(gray, scaleFactor=SCALE_FACTOR,
+	minNeighbors=10, minSize=(75, 75))
+
+print(rects)
+
+# loop over the cat faces and draw a rectangle surrounding each
+for (i, (x, y, w, h)) in enumerate(rects):
+	cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+	cv2.putText(image, "Cat #{}".format(i + 1), (x, y - 10),
+		cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2)
+ 
+# show the detected cat faces
+cv2.imshow("Cat Faces", image)
+cv2.waitKey(0)
+
+
+"""
+
+#img = Image.open('/home/pi/Desktop/image0.jpg')
+(width,height) = img.size
+image = list(img.getdata())
+image = numpy.array(image)
+image3d = image.reshape((height,width,3))
+
+new_img = img.resize((256,256))
+new_img.show()
+new_img.save('/home/pi/Desktop/i','png')
+
+
+# Create the in-memory stream
+stream = io.BytesIO()
+
+with picamera.PiCamera() as camera:
+    camera.start_preview()
+    time.sleep(2)
+    camera.capture(stream, format='jpeg')
+# Construct a numpy array from the stream
+data = numpy.fromstring(stream.getvalue(), dtype=numpy.uint8)
+# "Decode" the image from the array, preserving colour
+image = cv2.imdecode(data, 1)
+# OpenCV returns an array with data in BGR order. If you want RGB instead
+# use the following...
+image = image[:, :, ::-1]
+
+"""

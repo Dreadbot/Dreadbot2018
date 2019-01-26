@@ -1,0 +1,6 @@
+- hosts: '{{ target }}' 
+  remote_user: pi
+  serial: 1
+  roles:
+    - vision
+ 

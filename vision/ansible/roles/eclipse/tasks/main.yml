@@ -1,0 +1,47 @@
+- name: Make directories
+  file:
+    name: "{{item.name}}"
+    owner: "{{item.owner}}"
+    mode: "{{item.mode}}"
+    state: "directory"
+  with_items:
+     - { name: "/home/dreadbots/src/", owner: "dreadbots", mode: "755" }
+     - { name: "/home/dreadbots/packages/", owner: "dreadbots", mode: "755" }     
+- name: Copy files
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    mode: "{{item.mode}}"
+  with_items:
+     - { src: "01-jdk-8u151-linux-x64.tar.gz", dest: "/home/dreadbots/packages/", owner: "dreadbots", mode: "644" }
+     - { src: "03-eclipse-cpp-oxygen-2-linux-gtk-x86_64.tar.gz", dest: "/home/dreadbots/packages/", owner: "dreadbots", mode: "644" }
+     - { src: "dreadbots-20180108.tar.gz", dest: "/home/dreadbots/packages/", owner: "dreadbots", mode: "644" }     
+- name: Enable PPA
+  apt_repository:
+    repo: "{{item}}" 
+  with_items:
+    - ppa:webupd8team/java
+    - ppa:wpilib/toolchain-beta
+- name: Install packages
+  apt:
+    name: "{{item}}"
+    state: present
+  with_items:
+    - oracle-java8-installer
+    - frcmake    
+    - frc-toolchain
+#    - linux-libc-dev-frc-armel-cross
+#    - g++-arm-frc-linux-gnueabi
+#- name: Extract the eclipse tar ball
+#  unarchive:
+#    src: /home/dreadbots/packages/03-eclipse-cpp-oxygen-2-linux-gtk-x86_64.tar.gz
+#    dest: /home/dreadbots/
+#    remote_src: no
+#    owner: dreadbots
+- name: Extract the dreadbots home directory
+  unarchive:
+    src: /home/dreadbots/packages/dreadbots-20180108.tar.gz
+    dest: /home/
+    remote_src: no
+    owner: dreadbots

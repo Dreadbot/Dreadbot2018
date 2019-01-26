@@ -1,0 +1,10 @@
+- name: Create users
+  user:
+    name: "{{item}}"
+    state: present
+    shell: /bin/bash
+    groups: "{{ SUDO_GROUP }}"
+    update_password: on_create
+    password: "$6$tdRoTooO$It8ONPglXWYmcaOarV2cqiUL5PK4amMrsOTlP7In1Z6XmZXfANSAoPX02gRN/.v.T/N7b8H8UaJ9/qr/JIpuj."
+  with_items:
+    - dreadbots

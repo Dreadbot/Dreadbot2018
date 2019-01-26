@@ -1,0 +1,6 @@
+- hosts: '{{ target }}' 
+  remote_user: rseward
+  serial: 1
+  roles:
+    - vision
+ 

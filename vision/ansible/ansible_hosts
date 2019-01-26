@@ -1,0 +1,3 @@
+[vision]
+dreadbots.bluestone-consulting.net ansible_connectio=ssh ansible_ssh_user=pi SUDO_GROUP=sudo
+smeagol.bluestone-consulting.net ansible_connectio=ssh ansible_ssh_user=rseward SUDO_GROUP=sudo

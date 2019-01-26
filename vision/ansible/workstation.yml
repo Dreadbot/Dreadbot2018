@@ -1,0 +1,8 @@
+- hosts: '{{ target }}' 
+  remote_user: rseward
+  serial: 1
+  roles:
+    - { role: workstation, become: yes }
+    - { role: eclipse, become: yes } 
+    
+ 

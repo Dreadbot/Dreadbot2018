@@ -1,0 +1,1 @@
+/var/tmp/images/status.txt
