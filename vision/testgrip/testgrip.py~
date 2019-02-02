@@ -79,16 +79,36 @@ class DreadbotPipelineTester(object):
     def __init__(self):
         self.debug = True
         self.camera = None
+        self.picam =  None
         pass
 
     def getcamera(self):
-        import picamera
-        from picamera import PiCamera
+        camera = None
+        try:
+            import picamera
+            from picamera import PiCamera
 
-        camera = PiCamera()
-        camera.resolution = (400, 304)
+            camera = self.picam = PiCamera()
+            camera.resolution = (400, 304)
+        except:
+            pass
+
+        # Not on a pi, try a USB camera with opencv
+        if not(camera):
+            from imutils.video import VideoStream
+            camera = VideoStream(src=0).start()
+        
 
         return camera
+
+    def getcameraimage(self):
+        if self.picam:
+            imgfile =  "/tmp/testgrip.jpg"             
+            self.picam.capture( imgfile )
+            return cv2.imread( imgfile )
+        if self.camera:
+            return cam.read()
+        
 
     def detect(self, img):
         
@@ -127,12 +147,7 @@ class DreadbotPipelineTester(object):
             print( "Loading the image: %s" % imagefile )
             img = cv2.imread( imagefile )
         else:
-            if not(self.camera):
-                self.camera = self.getcamera()
-                
-            imgfile =  "/tmp/testgrip.jpg" 
-            self.camera.capture( imgfile )
-            img = cv2.imread( imgfile )
+            img = self.getcameraimage()
 
         return img
         

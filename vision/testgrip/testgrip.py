@@ -47,6 +47,7 @@ def main():
     tester = DreadbotPipelineTester()
     while True:
         img = tester.getimage( imagefile=args.image  )
+        print( "img=%s" % img )
         features = tester.detect( img )
 
         tester.annotate( img, features)
@@ -58,8 +59,8 @@ def main():
     
 
 def getpipeline(pipeline):
-    from autolinegrip import GripPipeline
-    #from yellowboxgrip import GripPipeline
+    #from autolinegrip import GripPipeline
+    from yellowboxgrip import GripPipeline
     #from greenblobgrip import GripPipeline
 
     return GripPipeline()
@@ -78,12 +79,21 @@ class DreadbotPipelineTester(object):
 
     def __init__(self):
         self.debug = True
-        self.camera = None
+        self.usbcam = None
         self.picam =  None
         pass
 
     def getcamera(self):
         camera = None
+        if self.picam:
+            camera = self.picam
+        if self.usbcam:
+            camera = self.usbcam
+
+        if camera:
+            return camera
+
+        # Try to construct one
         try:
             import picamera
             from picamera import PiCamera
@@ -96,18 +106,25 @@ class DreadbotPipelineTester(object):
         # Not on a pi, try a USB camera with opencv
         if not(camera):
             from imutils.video import VideoStream
-            camera = VideoStream(src=0).start()
+            camera = self.usbcam = VideoStream(src=0).start()
         
 
+        
         return camera
 
     def getcameraimage(self):
+        cam = self.getcamera()
+        
         if self.picam:
+            print("getcameraimage from PI!")
             imgfile =  "/tmp/testgrip.jpg"             
             self.picam.capture( imgfile )
             return cv2.imread( imgfile )
-        if self.camera:
-            return cam.read()
+        if self.usbcam:
+            print("getcameraimage from USB!")            
+            # If we want to resize the cam image do something like the following,
+            # self.rawCapture = imutils.resize( self.rawCapture, width=self.res[0] )
+            return self.usbcam.read()
         
 
     def detect(self, img):
@@ -233,12 +250,14 @@ class DreadbotPipelineTester(object):
         print( "Wrote annotated image to annotated.jpg" )
         cv2.imshow( "Analyze", annotated )
 
-        if self.camera:
+        
+        if self.picam or self.usbcam:
             cv2.waitKey(1) # 5000) # Show the image for 5 seconds
         else:
             hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
             cv2.imshow( "HSV", hsv )
             cv2.waitKey()
+        
         
         pass
         

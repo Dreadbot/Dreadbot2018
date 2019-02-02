@@ -616,7 +616,7 @@ class DreadbotVisionEngine(object):
                     utimer.stop()
 
                 self.updateStatus()
-                if not(self.lastNtRead) or (now-self.lastNtRead).seconds > 10.0:
+                if not(self.lastNtRead) or (now-self.lastNtRead).seconds > 1.0:
                     # Apply network table values every 10 seconds.
                     self.readNettable()
                     
